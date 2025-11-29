@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FiddleStIXV1 Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #050711;
+      color: #f9f9ff;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+    .card {
+      background: radial-gradient(circle at top, #1b1f3b, #050711);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 4px 4px 4px 0;
+      outline: none;
+      background: linear-gradient(135deg, #ff7a18, #af002d 70%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, #4b6cff, #8f94fb);
+    }
+    button.ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: none;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+    input[type=range] {
+      width: 100%;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      margin-left: 6px;
+    }
+    #status {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: rgba(255,255,255,0.06);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>FiddleStIXV1 Controller</h1>
+
+  <div class="card">
+    <div class="row">
+      <button id="connectBtn">Connect</button>
+      <button id="onBtn" class="secondary" disabled>ON</button>
+      <button id="offBtn" class="ghost" disabled>OFF</button>
+    </div>
+    <div id="status">Disconnected</div>
+  </div>
+
+  <div class="card">
+    <label for="brightness">Brightness <span id="brightnessLabel" class="pill">4 / 7</span></label>
+    <input type="range" id="brightness" min="1" max="7" value="4">
+    <small style="opacity:0.7;">(Disco Mode always runs at max brightness, ignoring this slider.)</small>
+  </div>
+
+  <div class="card">
+    <label for="listSelect">Pattern List (0–7)</label>
+    <input type="range" id="listSelect" min="0" max="7" value="0">
+    <div class="grid" style="margin-top:6px;">
+      <div class="chip">0 – White</div>
+      <div class="chip">1 – Red</div>
+      <div class="chip">2 – Orange</div>
+      <div class="chip">3 – Yellow</div>
+      <div class="chip">4 – Green</div>
+      <div class="chip">5 – Indigo</div>
+      <div class="chip">6 – Violet</div>
+      <div class="chip">7 – Extra</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="patternSelect">Pattern Index (0–49)</label>
+    <input type="range" id="patternSelect" min="0" max="49" value="0">
+    <div class="row" style="margin-top:8px;">
+      <button id="prevPatternBtn" class="ghost" style="flex:1;">Prev</button>
+      <button id="nextPatternBtn" class="ghost" style="flex:1;">Next</button>
+    </div>
+    <small style="opacity:0.7;">Index 0 is a meta-pattern that auto-scrolls through this list.</small>
+  </div>
+
+  <div class="card">
+    <label>Modes</label>
+    <div class="row">
+      <button id="playBtn" class="secondary" disabled>Play Mode</button>
+      <button id="discoBtn" disabled>Disco Mode</button>
+      <button id="exitDiscoBtn" class="ghost" disabled>Exit Disco</button>
+    </div>
+    <label style="margin-top:10px;">Sleep</label>
+    <div class="row">
+      <button id="sleepOnBtn" class="ghost" disabled>Sleep ON</button>
+      <button id="sleepOffBtn" class="ghost" disabled>Sleep OFF</button>
+    </div>
+  </div>
+
+  <script>
+    const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const NUS_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // we write here
+    const NUS_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notifications from device
+
+    let device = null;
+    let server = null;
+    let rxChar = null; // write
+    let txChar = null; // notify
+
+    const connectBtn       = document.getElementById('connectBtn');
+    const onBtn            = document.getElementById('onBtn');
+    const offBtn           = document.getElementById('offBtn');
+    const playBtn          = document.getElementById('playBtn');
+    const discoBtn         = document.getElementById('discoBtn');
+    const exitDiscoBtn     = document.getElementById('exitDiscoBtn');
+    const sleepOnBtn       = document.getElementById('sleepOnBtn');
+    const sleepOffBtn      = document.getElementById('sleepOffBtn');
+    const brightnessInput  = document.getElementById('brightness');
+    const brightnessLabel  = document.getElementById('brightnessLabel');
+    const listSelect       = document.getElementById('listSelect');
+    const patternSelect    = document.getElementById('patternSelect');
+    const prevPatternBtn   = document.getElementById('prevPatternBtn');
+    const nextPatternBtn   = document.getElementById('nextPatternBtn');
+    const statusEl         = document.getElementById('status');
+
+    function logStatus(msg) {
+      console.log(msg);
+      statusEl.textContent = msg;
+    }
+
+    async function connect() {
+      try {
+        if (!navigator.bluetooth) {
+          alert('Web Bluetooth is not supported in this browser.');
+          return;
+        }
+
+        logStatus('Requesting FiddleStIXV1…');
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'FiddleStIXV1' }],
+          optionalServices: [NUS_SERVICE_UUID]
+        });
+
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+
+        logStatus('Connecting GATT…');
+        server = await device.gatt.connect();
+
+        logStatus('Getting NUS service…');
+        const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+        logStatus('Getting RX/TX characteristics…');
+        rxChar = await service.getCharacteristic(NUS_RX_UUID);
+        txChar = await service.getCharacteristic(NUS_TX_UUID);
+
+        await txChar.startNotifications();
+        txChar.addEventListener('characteristicvaluechanged', onTxNotification);
+
+        logStatus('Connected to FiddleStIXV1');
+        setControlsEnabled(true);
+      } catch (err) {
+        console.error(err);
+        logStatus('Error: ' + err);
+      }
+    }
+
+    function onDisconnected() {
+      logStatus('Disconnected');
+      setControlsEnabled(false);
+    }
+
+    function setControlsEnabled(connected) {
+      onBtn.disabled        = !connected;
+      offBtn.disabled       = !connected;
+      playBtn.disabled      = !connected;
+      discoBtn.disabled     = !connected;
+      exitDiscoBtn.disabled = !connected;
+      sleepOnBtn.disabled   = !connected;
+      sleepOffBtn.disabled  = !connected;
+      brightnessInput.disabled = !connected;
+      listSelect.disabled      = !connected;
+      patternSelect.disabled   = !connected;
+      prevPatternBtn.disabled  = !connected;
+      nextPatternBtn.disabled  = !connected;
+    }
+
+    function sendCommand(cmd) {
+      if (!rxChar) {
+        logStatus('Not connected');
+        return;
+      }
+      const enc = new TextEncoder();
+      const data = enc.encode(cmd + '\n');
+      rxChar.writeValue(data).catch(err => {
+        console.error(err);
+        logStatus('Write error: ' + err);
+      });
+    }
+
+    function onTxNotification(event) {
+      // Currently we ignore data from device; you could add status messages later
+      const value = event.target.value;
+      const dec = new TextDecoder();
+      const text = dec.decode(value);
+      console.log('RX from device:', text);
+    }
+
+    // ---------- UI events ----------
+
+    connectBtn.addEventListener('click', () => {
+      if (device && device.gatt.connected) {
+        device.gatt.disconnect();
+      } else {
+        connect();
+      }
+    });
+
+    onBtn.addEventListener('click', () => {
+      sendCommand('ON');
+      logStatus('Sent: ON');
+    });
+
+    offBtn.addEventListener('click', () => {
+      sendCommand('OFF');
+      logStatus('Sent: OFF');
+    });
+
+    playBtn.addEventListener('click', () => {
+      sendCommand('D0'); // ensure exit disco
+      logStatus('Sent: D0 (Play Mode)');
+    });
+
+    discoBtn.addEventListener('click', () => {
+      sendCommand('D1');
+      logStatus('Sent: D1 (Disco Mode)');
+    });
+
+    exitDiscoBtn.addEventListener('click', () => {
+      sendCommand('D0');
+      logStatus('Sent: D0 (Exit Disco)');
+    });
+
+    sleepOnBtn.addEventListener('click', () => {
+      sendCommand('S1');
+      logStatus('Sent: S1 (Sleep enabled)');
+    });
+
+    sleepOffBtn.addEventListener('click', () => {
+      sendCommand('S0');
+      logStatus('Sent: S0 (Sleep disabled)');
+    });
+
+    brightnessInput.addEventListener('input', () => {
+      const val = brightnessInput.value;
+      brightnessLabel.textContent = `${val} / 7`;
+    });
+
+    brightnessInput.addEventListener('change', () => {
+      const val = brightnessInput.value;
+      sendCommand('B' + val);
+      logStatus('Sent: B' + val);
+    });
+
+    listSelect.addEventListener('change', () => {
+      const val = listSelect.value;
+      sendCommand('L' + val);
+      logStatus('Sent: L' + val);
+    });
+
+    patternSelect.addEventListener('change', () => {
+      const val = patternSelect.value;
+      sendCommand('I' + val);
+      logStatus('Sent: I' + val);
+    });
+
+    prevPatternBtn.addEventListener('click', () => {
+      let val = parseInt(patternSelect.value, 10);
+      val = (val - 1 + 50) % 50;
+      patternSelect.value = val;
+      sendCommand('I' + val);
+      logStatus('Sent: I' + val);
+    });
+
+    nextPatternBtn.addEventListener('click', () => {
+      let val = parseInt(patternSelect.value, 10);
+      val = (val + 1) % 50;
+      patternSelect.value = val;
+      sendCommand('I' + val);
+      logStatus('Sent: I' + val);
+    });
+
+    // Initial state
+    setControlsEnabled(false);
+  </script>
+</body>
+</html>
