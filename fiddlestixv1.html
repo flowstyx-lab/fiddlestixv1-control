@@ -2,385 +2,453 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FiddleStix V1 Control</title>
+  <title>FiddleStyx V1 Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #05060b;
-      color: #f5f5f5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #eee;
       margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
       padding: 16px;
     }
     h1 {
       font-size: 1.6rem;
-      margin-bottom: 0.25rem;
+      margin-bottom: 8px;
     }
     h2 {
       font-size: 1.1rem;
-      margin-top: 1.3rem;
-      margin-bottom: 0.4rem;
-    }
-    .card {
-      background: #121420;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+      margin-top: 16px;
+      margin-bottom: 4px;
     }
     button {
+      padding: 8px 14px;
       margin: 4px;
-      padding: 6px 12px;
-      border-radius: 8px;
+      border-radius: 6px;
       border: none;
       cursor: pointer;
-      font-size: 0.9rem;
-    }
-    button.primary {
-      background: #1f8fff;
+      background: #2d8cff;
       color: #fff;
+      font-size: 0.95rem;
     }
     button.secondary {
-      background: #333c55;
-      color: #f5f5f5;
+      background: #444;
     }
     button.danger {
-      background: #ff4b5c;
-      color: #fff;
+      background: #d9534f;
     }
     button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+      opacity: 0.5;
+      cursor: default;
     }
-    #status {
-      font-size: 0.9rem;
-      color: #a5b0ff;
-      min-height: 1.2rem;
-      margin-bottom: 8px;
-    }
-    #log {
-      font-family: monospace;
-      font-size: 0.8rem;
-      max-height: 200px;
-      overflow-y: auto;
-      background: #05060b;
-      border-radius: 8px;
-      padding: 8px;
-      border: 1px solid #303448;
-    }
-    input[type="text"], select {
-      padding: 4px 6px;
-      border-radius: 6px;
-      border: 1px solid #303448;
-      background: #05060b;
-      color: #f5f5f5;
-      font-size: 0.9rem;
-      margin: 2px;
+    input[type="number"] {
+      width: 60px;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
     }
     .row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
-    .row label {
-      margin-right: 4px;
-      font-size: 0.85rem;
-    }
-    .label {
-      font-size: 0.8rem;
-      color: #9ea6ff;
-      margin-right: 4px;
-    }
-    .value {
-      font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
-      font-size: 0.85rem;
+    .row > * {
       margin-right: 8px;
+      margin-bottom: 4px;
     }
-    .pill {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 0.8rem;
-      background: #191b2a;
-      margin-right: 6px;
+    .status {
+      font-size: 0.9rem;
+      color: #ccc;
+      margin-top: 8px;
+    }
+    #battery-bar {
+      height: 10px;
+      background: #333;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 4px;
+      width: 200px;
+    }
+    #battery-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f00, #ff0, #0f0);
+    }
+    #mic-level-bar {
+      height: 10px;
+      background: #333;
+      border-radius: 5px;
+      overflow: hidden;
+      width: 200px;
+    }
+    #mic-level-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0ff, #09f);
+    }
+    canvas {
+      background: #000;
+      border-radius: 6px;
+    }
+    .small-text {
+      font-size: 0.85rem;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
-  <h1>FiddleStix V1 Control</h1>
-  <div id="status">Not connected</div>
+  <div class="container">
+    <h1>FiddleStyx V1 Control</h1>
+    <p class="small-text">
+      Connect via Web Bluetooth, send commands, and view live IMU, microphone and battery data.
+      For iPhone, you'll need a compatible browser on macOS or another device that supports Web Bluetooth.
+    </p>
 
-  <div class="card">
+    <!-- Connection controls -->
     <h2>Connection</h2>
-    <button id="connectBtn" class="primary">Connect to FiddleStIXV1</button>
-    <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
-  </div>
+    <div class="row">
+      <button id="connect-button">Connect</button>
+      <button id="disconnect-button" class="secondary" disabled>Disconnect</button>
+      <span id="connection-status" class="status">Not connected</span>
+    </div>
 
-  <div class="card">
-    <h2>Quick Commands</h2>
+    <!-- Basic controls -->
+    <h2>Device Controls</h2>
     <div class="row">
-      <button class="primary" data-cmd="ON">ON</button>
-      <button class="danger" data-cmd="OFF">OFF</button>
-      <button class="secondary" data-cmd="N">Next pattern (N)</button>
+      <button id="btn-on">ON</button>
+      <button id="btn-off" class="secondary">OFF</button>
+      <button id="btn-disco" class="secondary">DISCO (D1)</button>
+      <button id="btn-play" class="secondary">Exit DISCO (D0)</button>
     </div>
-    <div class="row">
-      <button class="secondary" data-cmd="D1">DISCO ON (D1)</button>
-      <button class="secondary" data-cmd="D0">DISCO OFF (D0)</button>
-    </div>
-    <div class="row">
-      <span class="label">Brightness:</span>
-      <button class="secondary" data-cmd="B1">B1</button>
-      <button class="secondary" data-cmd="B2">B2</button>
-      <button class="secondary" data-cmd="B3">B3</button>
-      <button class="secondary" data-cmd="B4">B4</button>
-      <button class="secondary" data-cmd="B5">B5</button>
-      <button class="secondary" data-cmd="B6">B6</button>
-      <button class="secondary" data-cmd="B7">B7</button>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>List & Pattern</h2>
     <div class="row">
-      <label for="listSelect">List (L0..L7):</label>
-      <select id="listSelect">
-        <option value="0">L0</option>
-        <option value="1">L1</option>
-        <option value="2">L2</option>
-        <option value="3">L3</option>
-        <option value="4">L4</option>
-        <option value="5">L5</option>
-        <option value="6">L6</option>
-        <option value="7">L7</option>
-      </select>
-      <button class="secondary" id="setListBtn">Set List</button>
+      <label>Brightness (B0-7):</label>
+      <input type="number" id="brightness-input" min="0" max="7" value="4" />
+      <button id="brightness-set">Set</button>
     </div>
-    <div class="row">
-      <label for="patternInput">Pattern index (0..49):</label>
-      <input type="text" id="patternInput" value="0" size="3" />
-      <button class="secondary" id="setPatternBtn">Set Pattern</button>
-    </div>
-  </div>
 
-  <div class="card">
-    <h2>Sleep Control</h2>
-    <button class="secondary" data-cmd="S1">Sleep Enabled (S1)</button>
-    <button class="secondary" data-cmd="S0">Sleep Disabled (S0)</button>
-  </div>
+    <div class="row">
+      <label>List (L0-7):</label>
+      <input type="number" id="list-input" min="0" max="7" value="0" />
+      <button id="list-set">Set</button>
 
-  <div class="card">
-    <h2>Live Telemetry</h2>
-    <div class="row">
-      <span class="pill">IMU</span>
-      <span class="label">ax:</span><span class="value" id="imuAx">-</span>
-      <span class="label">ay:</span><span class="value" id="imuAy">-</span>
-      <span class="label">az:</span><span class="value" id="imuAz">-</span>
-      <span class="label">|a|:</span><span class="value" id="imuMag">-</span>
-    </div>
-    <div class="row">
-      <span class="pill">MIC</span>
-      <span class="label">level:</span><span class="value" id="micLevel">-</span>
-      <div style="flex-basis: 100%; height: 4px;"></div>
-    </div>
-    <div class="row">
-      <span class="pill">BAT</span>
-      <span class="label">charge:</span><span class="value" id="batPercent">-</span>
-      <span class="label">voltage:</span><span class="value" id="batVoltage">-</span>
-    </div>
-  </div>
+      <label>Pattern (I0-49):</label>
+      <input type="number" id="pattern-input" min="0" max="49" value="0" />
+      <button id="pattern-set">Set</button>
 
-  <div class="card">
-    <h2>Raw Command</h2>
-    <div class="row">
-      <input type="text" id="rawCmd" placeholder="Enter command, e.g. B4" />
-      <button class="primary" id="sendRawBtn">Send</button>
+      <button id="pattern-next" class="secondary">Next pattern (N)</button>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>Log</h2>
-    <div id="log"></div>
+    <div class="row">
+      <label>Sleep:</label>
+      <button id="sleep-on" class="secondary">S1 (enable)</button>
+      <button id="sleep-off" class="secondary">S0 (disable)</button>
+    </div>
+
+    <!-- Battery -->
+    <h2>Battery</h2>
+    <div class="row">
+      <span id="battery-text">Battery: --% (-- V)</span>
+    </div>
+    <div id="battery-bar">
+      <div id="battery-bar-inner"></div>
+    </div>
+
+    <!-- Mic level -->
+    <h2>Microphone Level</h2>
+    <div class="row">
+      <span id="mic-text">Level: 0.00</span>
+    </div>
+    <div id="mic-level-bar">
+      <div id="mic-level-bar-inner"></div>
+    </div>
+
+    <!-- IMU chart -->
+    <h2>IMU Acceleration (g)</h2>
+    <p class="small-text">X, Y, Z plotted separately so you can see exactly what the sensor sees.</p>
+    <canvas id="imu-chart" width="800" height="300"></canvas>
+
+    <!-- Raw log -->
+    <h2>Raw Telemetry Log</h2>
+    <pre id="log" style="background:#000; color:#0f0; padding:8px; max-height:200px; overflow:auto; border-radius:6px; font-size:0.8rem;"></pre>
   </div>
 
   <script>
-    const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from device
-    const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to device
+    // Nordic UART Service UUIDs (Adafruit/Bluefruit style)
+    const NUS_SERVICE_UUID        = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const NUS_RX_CHARACTERISTIC   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // from peripheral to central (notify)
+    const NUS_TX_CHARACTERISTIC   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // from central to peripheral (write)
 
-    let bleDevice = null;
-    let gattServer = null;
-    let uartService = null;
-    let rxCharacteristic = null;
-    let txCharacteristic = null;
+    let bleDevice           = null;
+    let gattServer          = null;
+    let txCharacteristic    = null;
+    let rxCharacteristic    = null;
 
-    const statusEl = document.getElementById('status');
-    const logEl = document.getElementById('log');
-    const connectBtn = document.getElementById('connectBtn');
-    const disconnectBtn = document.getElementById('disconnectBtn');
+    let receiveBuffer       = '';
 
-    const imuAxEl = document.getElementById('imuAx');
-    const imuAyEl = document.getElementById('imuAy');
-    const imuAzEl = document.getElementById('imuAz');
-    const imuMagEl = document.getElementById('imuMag');
-    const micLevelEl = document.getElementById('micLevel');
-    const batPercentEl = document.getElementById('batPercent');
-    const batVoltageEl = document.getElementById('batVoltage');
+    const connectButton     = document.getElementById('connect-button');
+    const disconnectButton  = document.getElementById('disconnect-button');
+    const connStatusSpan    = document.getElementById('connection-status');
+    const logElem           = document.getElementById('log');
 
-    let rxBuffer = '';
+    const batteryText       = document.getElementById('battery-text');
+    const batteryBarInner   = document.getElementById('battery-bar-inner');
 
-    function log(msg) {
-      const time = new Date().toLocaleTimeString();
-      logEl.innerText = `[${time}] ${msg}\n` + logEl.innerText;
-    }
+    const micText           = document.getElementById('mic-text');
+    const micBarInner       = document.getElementById('mic-level-bar-inner');
 
-    function setStatus(msg) {
-      statusEl.innerText = msg;
-      log(msg);
+    // IMU chart setup
+    const imuCtx = document.getElementById('imu-chart').getContext('2d');
+    const MAX_POINTS = 200;
+
+    const imuData = {
+      labels: [],
+      ax: [],
+      ay: [],
+      az: []
+    };
+
+    const imuChart = new Chart(imuCtx, {
+      type: 'line',
+      data: {
+        labels: imuData.labels,
+        datasets: [
+          {
+            label: 'Ax (g)',
+            data: imuData.ax,
+            borderWidth: 1,
+            tension: 0.1,
+          },
+          {
+            label: 'Ay (g)',
+            data: imuData.ay,
+            borderWidth: 1,
+            tension: 0.1,
+          },
+          {
+            label: 'Az (g)',
+            data: imuData.az,
+            borderWidth: 1,
+            tension: 0.1,
+          }
+        ]
+      },
+      options: {
+        animation: false,
+        scales: {
+          x: {
+            ticks: {
+              display: false
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'g'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#eee'
+            }
+          }
+        }
+      }
+    });
+
+    function appendLog(line) {
+      logElem.textContent += line + '\n';
+      logElem.scrollTop = logElem.scrollHeight;
     }
 
     async function connect() {
       try {
-        setStatus('Requesting Bluetooth device...');
-        bleDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ name: 'FiddleStIXV1' }],
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [
+            { namePrefix: 'FiddleStIXV1' }
+          ],
           optionalServices: [NUS_SERVICE_UUID]
         });
 
+        bleDevice = device;
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-        setStatus('Connecting to GATT server...');
-        gattServer = await bleDevice.gatt.connect();
+        connStatusSpan.textContent = 'Connecting...';
+        const server = await bleDevice.gatt.connect();
+        gattServer = server;
 
-        setStatus('Getting UART service...');
-        uartService = await gattServer.getPrimaryService(NUS_SERVICE_UUID);
+        const service = await gattServer.getPrimaryService(NUS_SERVICE_UUID);
+        rxCharacteristic = await service.getCharacteristic(NUS_RX_CHARACTERISTIC);
+        txCharacteristic = await service.getCharacteristic(NUS_TX_CHARACTERISTIC);
 
-        setStatus('Getting RX characteristic...');
-        rxCharacteristic = await uartService.getCharacteristic(NUS_RX_CHAR_UUID);
+        await rxCharacteristic.startNotifications();
+        rxCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
 
-        setStatus('Getting TX characteristic...');
-        txCharacteristic = await uartService.getCharacteristic(NUS_TX_CHAR_UUID);
+        connStatusSpan.textContent = 'Connected to ' + bleDevice.name;
+        connectButton.disabled = true;
+        disconnectButton.disabled = false;
 
-        await txCharacteristic.startNotifications();
-        txCharacteristic.addEventListener('characteristicvaluechanged', onTxNotification);
+        appendLog('Connected to ' + bleDevice.name);
 
-        setStatus('Connected to FiddleStIXV1');
-        connectBtn.disabled = true;
-        disconnectBtn.disabled = false;
       } catch (error) {
         console.error(error);
-        setStatus('Connection failed: ' + error);
+        connStatusSpan.textContent = 'Error: ' + error;
+        appendLog('Error: ' + error);
       }
     }
 
     function onDisconnected() {
-      setStatus('Device disconnected');
-      connectBtn.disabled = false;
-      disconnectBtn.disabled = true;
-      bleDevice = null;
-      gattServer = null;
-      uartService = null;
-      rxCharacteristic = null;
+      connStatusSpan.textContent = 'Disconnected';
+      connectButton.disabled = false;
+      disconnectButton.disabled = true;
       txCharacteristic = null;
+      rxCharacteristic = null;
     }
 
     async function disconnect() {
       if (!bleDevice) return;
-      setStatus('Disconnecting...');
-      await bleDevice.gatt.disconnect();
-      // onDisconnected() will run automatically
+      if (bleDevice.gatt.connected) {
+        await bleDevice.gatt.disconnect();
+      }
     }
 
-    function onTxNotification(event) {
+    function handleNotifications(event) {
       const value = event.target.value;
       const decoder = new TextDecoder('utf-8');
-      const chunk = decoder.decode(value);
+      const text = decoder.decode(value);
+      receiveBuffer += text;
 
-      rxBuffer += chunk;
-      let lines = rxBuffer.split('\n');
-      rxBuffer = lines.pop(); // save incomplete line
-
-      for (let line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        handleTelemetryLine(trimmed);
+      // Process line by line
+      let index;
+      while ((index = receiveBuffer.indexOf('\n')) >= 0) {
+        const line = receiveBuffer.slice(0, index).trim();
+        receiveBuffer = receiveBuffer.slice(index + 1);
+        if (line.length > 0) {
+          parseTelemetryLine(line);
+        }
       }
     }
 
-    function handleTelemetryLine(line) {
-      log('RX: ' + line);
+    function parseTelemetryLine(line) {
+      appendLog(line);
       const parts = line.split(',');
       if (parts[0] === 'IMU' && parts.length >= 5) {
-        imuAxEl.textContent = parseFloat(parts[1]).toFixed(3);
-        imuAyEl.textContent = parseFloat(parts[2]).toFixed(3);
-        imuAzEl.textContent = parseFloat(parts[3]).toFixed(3);
-        imuMagEl.textContent = parseFloat(parts[4]).toFixed(3);
+        const ax = parseFloat(parts[1]);
+        const ay = parseFloat(parts[2]);
+        const az = parseFloat(parts[3]);
+        updateImuChart(ax, ay, az);
       } else if (parts[0] === 'MIC' && parts.length >= 2) {
-        micLevelEl.textContent = parseFloat(parts[1]).toFixed(3);
+        const level = parseFloat(parts[1]);
+        updateMic(level);
       } else if (parts[0] === 'BAT' && parts.length >= 3) {
-        batPercentEl.textContent = parts[1] + '%';
-        batVoltageEl.textContent = parseFloat(parts[2]).toFixed(2) + ' V';
+        const pct = parseFloat(parts[1]);
+        const volt = parseFloat(parts[2]);
+        updateBattery(pct, volt);
       }
+    }
+
+    function updateImuChart(ax, ay, az) {
+      const t = (new Date()).toLocaleTimeString();
+
+      imuData.labels.push(t);
+      imuData.ax.push(ax);
+      imuData.ay.push(ay);
+      imuData.az.push(az);
+
+      if (imuData.labels.length > MAX_POINTS) {
+        imuData.labels.shift();
+        imuData.ax.shift();
+        imuData.ay.shift();
+        imuData.az.shift();
+      }
+
+      imuChart.update();
+    }
+
+    function updateMic(level) {
+      if (isNaN(level)) level = 0;
+      if (level < 0) level = 0;
+      if (level > 1) level = 1;
+
+      micText.textContent = 'Level: ' + level.toFixed(3);
+      micBarInner.style.width = (level * 100).toFixed(1) + '%';
+    }
+
+    function updateBattery(percent, voltage) {
+      if (isNaN(percent)) percent = 0;
+      if (isNaN(voltage)) voltage = 0;
+      if (percent < 0) percent = 0;
+      if (percent > 100) percent = 100;
+
+      batteryText.textContent = 'Battery: ' + percent.toFixed(0) + '% (' + voltage.toFixed(2) + ' V)';
+      batteryBarInner.style.width = percent.toFixed(0) + '%';
     }
 
     async function sendCommand(cmd) {
-      if (!rxCharacteristic) {
-        setStatus('Not connected');
+      if (!txCharacteristic) {
+        appendLog('Not connected');
         return;
       }
+      const text = cmd + '\n';
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
       try {
-        const full = cmd.trim() + '\n';
-        const data = new TextEncoder().encode(full);
-        await rxCharacteristic.writeValue(data);
-        log('TX: ' + cmd.trim());
-      } catch (err) {
-        console.error(err);
-        setStatus('Send failed: ' + err);
+        await txCharacteristic.writeValue(data);
+        appendLog('> ' + cmd);
+      } catch (e) {
+        console.error(e);
+        appendLog('Error sending: ' + e);
       }
     }
 
     // UI wiring
-    connectBtn.addEventListener('click', () => {
-      if (!navigator.bluetooth) {
-        alert('Web Bluetooth not supported in this browser.');
-        return;
+    connectButton.addEventListener('click', connect);
+    disconnectButton.addEventListener('click', disconnect);
+
+    document.getElementById('btn-on').addEventListener('click', () => sendCommand('ON'));
+    document.getElementById('btn-off').addEventListener('click', () => sendCommand('OFF'));
+    document.getElementById('btn-disco').addEventListener('click', () => sendCommand('D1'));
+    document.getElementById('btn-play').addEventListener('click', () => sendCommand('D0'));
+
+    document.getElementById('brightness-set').addEventListener('click', () => {
+      const v = parseInt(document.getElementById('brightness-input').value, 10);
+      if (v >= 0 && v <= 7) {
+        sendCommand('B' + v);
       }
-      connect();
     });
 
-    disconnectBtn.addEventListener('click', () => {
-      disconnect();
-    });
-
-    document.querySelectorAll('button[data-cmd]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const cmd = btn.getAttribute('data-cmd');
-        sendCommand(cmd);
-      });
-    });
-
-    document.getElementById('sendRawBtn').addEventListener('click', () => {
-      const cmd = document.getElementById('rawCmd').value;
-      if (cmd) sendCommand(cmd);
-    });
-
-    document.getElementById('setListBtn').addEventListener('click', () => {
-      const val = document.getElementById('listSelect').value;
-      const cmd = 'L' + val;
-      sendCommand(cmd);
-    });
-
-    document.getElementById('setPatternBtn').addEventListener('click', () => {
-      const val = document.getElementById('patternInput').value.trim();
-      const n = parseInt(val, 10);
-      if (isNaN(n) || n < 0 || n > 49) {
-        alert('Pattern must be 0..49');
-        return;
+    document.getElementById('list-set').addEventListener('click', () => {
+      const v = parseInt(document.getElementById('list-input').value, 10);
+      if (v >= 0 && v <= 7) {
+        sendCommand('L' + v);
       }
-      const cmd = 'I' + n;
-      sendCommand(cmd);
     });
+
+    document.getElementById('pattern-set').addEventListener('click', () => {
+      const v = parseInt(document.getElementById('pattern-input').value, 10);
+      if (v >= 0 && v <= 49) {
+        sendCommand('I' + v);
+      }
+    });
+
+    document.getElementById('pattern-next').addEventListener('click', () => {
+      sendCommand('N');
+    });
+
+    document.getElementById('sleep-on').addEventListener('click', () => sendCommand('S1'));
+    document.getElementById('sleep-off').addEventListener('click', () => sendCommand('S0'));
   </script>
 </body>
 </html>
-
-
