@@ -100,6 +100,29 @@
       font-size: 0.9rem;
       margin-top: 4px;
     }
+    .current-pattern {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .current-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #000000;          /* black text as requested */
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 0 12px rgba(0,0,0,0.7);
+    }
+    .current-pattern-text {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
   </style>
 
   <!-- Chart.js from CDN -->
@@ -184,6 +207,14 @@
     <div class="battery-display" id="batteryDisplay">
       Battery: -- % ( -- V )
     </div>
+
+    <!-- NEW: current list + pattern circular readout -->
+    <div class="current-pattern">
+      <div id="currentPatternCircle" class="current-circle">0</div>
+      <div id="currentPatternText" class="current-pattern-text">
+        Current: List 0 • Pattern 0
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -225,7 +256,58 @@
     const batteryDisplay = document.getElementById('batteryDisplay');
     const listCircles  = document.getElementById('listCircles');
 
+    const currentPatternCircle = document.getElementById('currentPatternCircle');
+    const currentPatternText   = document.getElementById('currentPatternText');
+
     let inputBuffer = '';
+
+    // Track current list & pattern
+    let currentListIndex = 0;
+    let currentPatternIndex = 0;
+
+    // Colors for list indices 0..7 (solid fills)
+    const listFillColors = [
+      '#f9fafb', // 0 white
+      '#ef4444', // 1 red
+      '#fb923c', // 2 orange
+      '#eab308', // 3 yellow
+      '#22c55e', // 4 green
+      '#3b82f6', // 5 blue
+      '#6366f1', // 6 indigo
+      '#a855f7', // 7 violet
+    ];
+
+    function updateCurrentPatternDisplay(listIdx, patternIdx) {
+      // Clamp
+      if (listIdx < 0) listIdx = 0;
+      if (listIdx > 7) listIdx = 7;
+      if (patternIdx < 0) patternIdx = 0;
+      if (patternIdx > 100) patternIdx = 100;
+
+      currentListIndex = listIdx;
+      currentPatternIndex = patternIdx;
+
+      // Circle fill color
+      currentPatternCircle.style.backgroundColor = listFillColors[listIdx] || '#f9fafb';
+      currentPatternCircle.textContent = patternIdx;
+
+      currentPatternText.textContent = `Current: List ${listIdx} • Pattern ${patternIdx}`;
+
+      // Update UI controls to match (without fighting user too hard)
+      iSlider.value = patternIdx;
+      iVal.textContent = patternIdx;
+
+      // Highlight selected list circle
+      Array.from(listCircles.querySelectorAll('.list-circle')).forEach(el => {
+        el.classList.toggle(
+          'selected',
+          parseInt(el.dataset.list, 10) === listIdx
+        );
+      });
+    }
+
+    // Initialize readout
+    updateCurrentPatternDisplay(0, 0);
 
     function setUiConnected(isConnected) {
       connected = isConnected;
@@ -285,7 +367,7 @@
     async function sendCommand(cmd) {
       if (!connected || !rxChar) return;
       try {
-        const data = enc.encode(cmd + '\n');
+        const data = new TextEncoder().encode(cmd + '\n');
         await rxChar.writeValue(data);
       } catch (err) {
         console.error('sendCommand error', err);
@@ -294,7 +376,7 @@
 
     function onUartNotify(event) {
       const value = event.target.value;
-      const text = dec.decode(value);
+      const text = new TextDecoder().decode(value);
       inputBuffer += text;
 
       let nlIndex;
@@ -424,9 +506,13 @@
         const level = parseFloat(parts[1]);
         addMicSample(level);
       } else if (parts[0] === 'BAT' && parts.length >= 3) {
-        const pct = parseInt(parts[1]);
+        const pct = parseInt(parts[1], 10);
         const volt = parseFloat(parts[2]);
         batteryDisplay.textContent = `Battery: ${pct} % ( ${volt.toFixed(2)} V )`;
+      } else if (parts[0] === 'PAT' && parts.length >= 3) {
+        const listIdx = parseInt(parts[1], 10);
+        const patIdx  = parseInt(parts[2], 10);
+        updateCurrentPatternDisplay(listIdx, patIdx);
       }
     }
 
@@ -445,21 +531,24 @@
     favBtn.addEventListener('click', () => sendCommand('F'));
 
     bSlider.addEventListener('input', () => {
-      const val = parseInt(bSlider.value);
+      const val = parseInt(bSlider.value, 10);
       bVal.textContent = val;
       if (connected) sendCommand('B' + val);
     });
 
     tSlider.addEventListener('input', () => {
-      const val = parseInt(tSlider.value);
+      const val = parseInt(tSlider.value, 10);
       tVal.textContent = val;
       if (connected) sendCommand('T' + val);
     });
 
     iSlider.addEventListener('input', () => {
-      const val = parseInt(iSlider.value);
+      const val = parseInt(iSlider.value, 10);
       iVal.textContent = val;
-      if (connected) sendCommand('I' + val);
+      if (connected) {
+        sendCommand('I' + val);
+        updateCurrentPatternDisplay(currentListIndex, val);
+      }
     });
 
     sleepToggle.addEventListener('change', () => {
@@ -470,12 +559,9 @@
     listCircles.addEventListener('click', (e) => {
       const tgt = e.target.closest('.list-circle');
       if (!tgt || !connected) return;
-      const idx = parseInt(tgt.dataset.list);
+      const idx = parseInt(tgt.dataset.list, 10);
       sendCommand('L' + idx);
-
-      Array.from(listCircles.querySelectorAll('.list-circle')).forEach(el => {
-        el.classList.toggle('selected', el === tgt);
-      });
+      updateCurrentPatternDisplay(idx, currentPatternIndex);
     });
   </script>
 </body>
