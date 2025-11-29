@@ -2,468 +2,311 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FiddleStix V1 Control</title>
+  <title>FiddleStix V1 – Mic/IMU Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     :root {
-      --bg-primary: #050510;
-      --bg-card: rgba(10, 10, 30, 0.95);
+      --bg: #050510;
+      --bg-card: rgba(8, 8, 22, 0.96);
       --accent: #ff4fd8;
-      --accent-soft: rgba(255, 79, 216, 0.4);
-      --text-main: #f4f7ff;
-      --text-muted: #8a8fb5;
-      --border-soft: rgba(255, 255, 255, 0.08);
-      --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.7);
-      --radius-lg: 18px;
+      --accent-soft: rgba(255,79,216,0.35);
+      --text: #f5f7ff;
+      --muted: #9aa0cc;
+      --border: rgba(255,255,255,0.08);
+      --radius: 16px;
     }
-
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-    }
-
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
     body {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #31107a 0, #050510 55%, #000000 100%);
-      color: var(--text-main);
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      padding: 16px;
+      margin:0;
+      min-height:100vh;
+      background: radial-gradient(circle at top, #31107a 0, #050510 50%, #000 100%);
+      color:var(--text);
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
+      padding:16px;
     }
-
     .app {
-      width: 100%;
-      max-width: 1100px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
-      grid-template-rows: auto auto;
-      gap: 16px;
+      width:100%;
+      max-width:1120px;
+      display:grid;
+      grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);
+      grid-template-rows:auto auto;
+      gap:16px;
     }
-
-    @media (max-width: 900px) {
-      .app {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
+    @media (max-width:900px){ .app{ grid-template-columns:1fr; } }
 
     .card {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-soft);
-      padding: 16px 18px;
-      position: relative;
-      overflow: hidden;
+      background:var(--bg-card);
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      padding:14px 16px;
+      box-shadow:0 16px 40px rgba(0,0,0,0.72);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 55%);
+      opacity:.8;
+    }
+    .card-header{ display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1; }
+    .title-row{ display:flex; flex-direction:column; gap:2px; }
+    .title{ font-weight:600; letter-spacing:.03em; font-size:1.05rem; display:flex; align-items:center; gap:8px; }
+    .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent-soft); }
+    .subtitle{ font-size:.78rem; color:var(--muted); }
+
+    button{
+      border:none;
+      border-radius:999px;
+      padding:7px 13px;
+      font-size:.86rem;
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+      background:linear-gradient(135deg,#ff4fd8,#ffb347);
+      color:#050510;
+      box-shadow:0 4px 15px rgba(0,0,0,0.45);
+      transition:transform .08s, box-shadow .08s, filter .08s;
+    }
+    button:hover{ transform:translateY(-1px); filter:brightness(1.05); box-shadow:0 8px 24px rgba(0,0,0,0.7); }
+    button:active{ transform:translateY(0); box-shadow:0 2px 8px rgba(0,0,0,0.6); }
+    button.secondary{
+      background:rgba(255,255,255,0.05);
+      color:var(--text);
+      border:1px solid var(--border);
+      box-shadow:none;
+    }
+    button.secondary:hover{ background:rgba(255,255,255,0.09); }
+
+    .pill{
+      font-size:.75rem;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,0.4);
+      color:var(--muted);
     }
 
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 55%);
-      opacity: 0.8;
+    .status-row{ display:flex; align-items:center; gap:8px; margin-top:4px; font-size:.78rem; color:var(--muted); }
+    .status-dot{ width:9px; height:9px; border-radius:50%; background:#ff5555; box-shadow:0 0 10px rgba(255,85,85,0.8); }
+    .status-connected{ background:#25de87; box-shadow:0 0 10px rgba(37,222,135,0.8); }
+
+    .controls-grid{
+      margin-top:8px;
+      display:grid;
+      grid-template-columns:1.2fr 1.1fr;
+      gap:12px;
+      position:relative;
+      z-index:1;
+    }
+    @media (max-width:900px){ .controls-grid{ grid-template-columns:1fr; } }
+
+    .section-title{
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--muted);
+      margin-bottom:6px;
     }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
+    .list-pills{ display:flex; flex-wrap:wrap; gap:8px; }
+    .list-circle{
+      width:24px; height:24px; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.3);
+      cursor:pointer;
+      position:relative;
+      box-shadow:0 0 10px rgba(0,0,0,0.7);
+      flex-shrink:0;
+      transition:transform .08s, box-shadow .08s, border-color .08s;
+    }
+    .list-circle span{
+      position:absolute;
+      left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      font-size:.65rem;
+      font-weight:700;
+      color:#000;
+      text-shadow:0 0 4px rgba(255,255,255,0.9);
+    }
+    .list-circle.selected{
+      transform:translateY(-1px) scale(1.07);
+      border-color:#fff;
+      box-shadow:0 0 16px rgba(255,255,255,0.9);
     }
 
-    .title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .slider-row{ margin-bottom:8px; }
+    .slider-label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.8rem;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .slider-label strong{ color:var(--text); }
+
+    input[type=range]{
+      width:100%;
+      background:transparent;
+      -webkit-appearance:none;
+    }
+    input[type=range]::-webkit-slider-runnable-track{
+      height:5px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ff4fd8,#ffb347);
+    }
+    input[type=range]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      width:14px; height:14px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid #ff4fd8;
+      margin-top:-4.5px;
+      box-shadow:0 0 8px rgba(255,79,216,0.7);
+    }
+    input[type=range]::-moz-range-track{
+      height:5px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ff4fd8,#ffb347);
+    }
+    input[type=range]::-moz-range-thumb{
+      width:14px; height:14px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid #ff4fd8;
+      box-shadow:0 0 8px rgba(255,79,216,0.7);
     }
 
-    .title-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 12px var(--accent-soft);
+    .chip{
+      font-size:.78rem;
+      padding:2px 7px;
+      border-radius:999px;
+      background:rgba(0,0,0,0.4);
+      border:1px solid var(--border);
+      color:var(--text);
     }
 
-    .subtitle {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 2px;
+    .row{ display:flex; align-items:center; gap:6px; }
+    .row.wrap{ flex-wrap:wrap; }
+
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+      font-size:.78rem;
+      color:var(--muted);
+    }
+    .toggle-switch{
+      width:40px; height:22px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      position:relative;
+      transition:background .12s, border-color .12s;
+    }
+    .toggle-thumb{
+      width:16px; height:16px;
+      border-radius:50%;
+      background:#fff;
+      position:absolute;
+      top:2px; left:2px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.5);
+      transition:transform .12s;
+    }
+    .toggle.on .toggle-switch{
+      background:rgba(37,222,135,0.4);
+      border-color:rgba(37,222,135,0.9);
+    }
+    .toggle.on .toggle-thumb{ transform:translateX(16px); }
+
+    .stats-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:8px;
+      font-size:.78rem;
+      color:var(--muted);
+    }
+    .stat-box{
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.06);
+      background:rgba(0,0,0,0.3);
+    }
+    .stat-label{ color:var(--muted); }
+    .stat-value{ color:var(--text); font-weight:600; margin-left:4px; }
+
+    .footer-note{
+      font-size:.7rem;
+      color:var(--muted);
+      text-align:right;
+      margin-top:4px;
     }
 
-    button {
-      border-radius: 999px;
-      border: none;
-      background: linear-gradient(135deg, #ff4fd8, #ffb347);
-      color: #081021;
-      font-weight: 600;
-      padding: 8px 14px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-    }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    }
-
-    button.secondary {
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-main);
-      border: 1px solid var(--border-soft);
-      box-shadow: none;
-    }
-
-    button.secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .pill {
-      font-size: 0.75rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-muted);
-    }
-
-    .status-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      margin-right: 6px;
-      background: #ff5555;
-      box-shadow: 0 0 10px rgba(255, 85, 85, 0.8);
-    }
-
-    .status-connected {
-      background: #25de87;
-      box-shadow: 0 0 10px rgba(37, 222, 135, 0.8);
-    }
-
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .controls-grid {
-      display: grid;
-      grid-template-columns: 1.3fr 1.1fr;
-      gap: 12px;
-      position: relative;
-      z-index: 1;
-    }
-
-    @media (max-width: 900px) {
-      .controls-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .section-title {
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .slider-row {
-      margin-bottom: 8px;
-    }
-
-    .slider-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 2px;
-    }
-
-    .slider-label strong {
-      color: var(--text-main);
-      font-size: 0.85rem;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      -webkit-appearance: none;
-      background: transparent;
-    }
-    input[type="range"]::-webkit-slider-runnable-track {
-      height: 5px;
-      background: linear-gradient(90deg, #ff4fd8, #ffb347);
-      border-radius: 999px;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #fff;
-      border: 2px solid #ff4fd8;
-      margin-top: -4.5px;
-      box-shadow: 0 0 8px rgba(255, 79, 216, 0.7);
-    }
-    input[type="range"]::-moz-range-track {
-      height: 5px;
-      background: linear-gradient(90deg, #ff4fd8, #ffb347);
-      border-radius: 999px;
-    }
-    input[type="range"]::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #fff;
-      border: 2px solid #ff4fd8;
-      box-shadow: 0 0 8px rgba(255, 79, 216, 0.7);
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .row.wrap {
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      font-size: 0.75rem;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .list-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .list-circle {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
-      cursor: pointer;
-      position: relative;
-      flex-shrink: 0;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.08s ease;
-    }
-
-    .list-circle span {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: #000;
-      text-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
-    }
-
-    .list-circle.selected {
-      transform: translateY(-1px) scale(1.05);
-      border-color: #ffffff;
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-
-    .toggle-switch {
-      width: 40px;
-      height: 22px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      position: relative;
-      transition: background 0.12s ease, border-color 0.12s ease;
-    }
-
-    .toggle-thumb {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #fff;
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.12s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    }
-
-    .toggle.on .toggle-switch {
-      background: rgba(37, 222, 135, 0.4);
-      border-color: rgba(37, 222, 135, 0.8);
-    }
-
-    .toggle.on .toggle-thumb {
-      transform: translateX(16px);
-    }
-
-    .graphs-container {
-      margin-top: 4px;
-    }
-
-    canvas {
-      width: 100% !important;
-      height: 170px !important;
-    }
-
-    .stats-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 6px;
-    }
-
-    .stat-box {
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      background: rgba(0, 0, 0, 0.25);
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-    }
-
-    .stat-value {
-      color: var(--text-main);
-      font-weight: 600;
-      margin-left: 4px;
-    }
-
-    .footer-note {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-align: right;
-      margin-top: 4px;
-    }
+    canvas{ width:100% !important; height:170px !important; }
   </style>
 </head>
 <body>
   <div class="app">
-
-    <!-- LEFT: Connection + main controls -->
+    <!-- Main control card -->
     <div class="card">
       <div class="card-header">
-        <div>
+        <div class="title-row">
           <div class="title">
-            <div class="title-dot"></div>
+            <div class="dot"></div>
             FiddleStix V1
           </div>
-          <div class="subtitle">
-            Neon flow-toy control panel • Web Bluetooth
-          </div>
+          <div class="subtitle">Web Bluetooth control • live IMU & mic graphs</div>
         </div>
         <div class="row wrap">
-          <button id="connectButton">
-            <span id="connectLabel">Connect</span>
-          </button>
-          <div class="pill">
-            <span id="deviceNameLabel">No device</span>
-          </div>
+          <button id="connectButton"><span id="connectLabel">Connect</span></button>
+          <div class="pill" id="deviceNameLabel">No device</div>
         </div>
       </div>
-
       <div class="status-row">
         <div id="statusDot" class="status-dot"></div>
         <div id="statusText">Disconnected</div>
       </div>
 
-      <div style="height:8px"></div>
-
       <div class="controls-grid">
-        <!-- Left column: list & pattern & brightness/T -->
+        <!-- Left: lists, pattern, brightness, T -->
         <div>
           <div class="section-title">Lists</div>
           <div class="list-pills">
-            <div class="list-circle" data-list="0" style="background:#ffffff">
-              <span>W</span>
-            </div>
-            <div class="list-circle" data-list="1" style="background:#ff2d2d">
-              <span>R</span>
-            </div>
-            <div class="list-circle" data-list="2" style="background:#ff8a1f">
-              <span>O</span>
-            </div>
-            <div class="list-circle" data-list="3" style="background:#ffdd33">
-              <span>Y</span>
-            </div>
-            <div class="list-circle" data-list="4" style="background:#44e26b">
-              <span>G</span>
-            </div>
-            <div class="list-circle" data-list="5" style="background:#3fa9ff">
-              <span>B</span>
-            </div>
-            <div class="list-circle" data-list="6" style="background:#5d3fff">
-              <span>I</span>
-            </div>
-            <div class="list-circle" data-list="7" style="background:#a53dff">
-              <span>V</span>
-            </div>
-            <div class="list-circle" data-list="8" style="background:#000000">
-              <span>Bl</span>
-            </div>
+            <div class="list-circle" data-list="0" style="background:#ffffff"><span>W</span></div>
+            <div class="list-circle" data-list="1" style="background:#ff2d2d"><span>R</span></div>
+            <div class="list-circle" data-list="2" style="background:#ff8a1f"><span>O</span></div>
+            <div class="list-circle" data-list="3" style="background:#ffdd33"><span>Y</span></div>
+            <div class="list-circle" data-list="4" style="background:#44e26b"><span>G</span></div>
+            <div class="list-circle" data-list="5" style="background:#3fa9ff"><span>B</span></div>
+            <div class="list-circle" data-list="6" style="background:#5d3fff"><span>I</span></div>
+            <div class="list-circle" data-list="7" style="background:#a53dff"><span>V</span></div>
+            <div class="list-circle" data-list="8" style="background:#000000"><span>Bl</span></div>
           </div>
 
-          <div style="height:10px"></div>
+          <div style="height:10px;"></div>
 
           <div class="section-title">Pattern & global brightness</div>
-
           <div class="slider-row">
             <div class="slider-label">
-              <span><strong>Pattern</strong> index</span>
+              <span><strong>Pattern index</strong> (0–31)</span>
               <span id="patternValue" class="chip">0</span>
             </div>
-            <input id="patternSlider" type="range" min="0" max="100" value="0">
+            <input id="patternSlider" type="range" min="0" max="31" value="0">
           </div>
 
           <div class="slider-row">
             <div class="slider-label">
-              <span><strong>Brightness</strong> level (B)</span>
+              <span><strong>B</strong>rightness level (0–7)</span>
               <span id="brightnessValue" class="chip">4</span>
             </div>
             <input id="brightnessSlider" type="range" min="0" max="7" value="4">
@@ -471,113 +314,80 @@
 
           <div class="slider-row">
             <div class="slider-label">
-              <span><strong>T</strong> (meta/disco dwell)</span>
+              <span><strong>T</strong> dwell (meta & disco)</span>
               <span id="tValue" class="chip">12 s</span>
             </div>
             <input id="tSlider" type="range" min="1" max="120" value="12">
           </div>
 
-          <div class="row wrap" style="margin-top:6px; gap:6px;">
+          <div class="row wrap" style="margin-top:6px;">
             <label id="sleepToggle" class="toggle">
-              <div class="toggle-switch">
-                <div class="toggle-thumb"></div>
-              </div>
+              <div class="toggle-switch"><div class="toggle-thumb"></div></div>
               <span>Sleep mode</span>
             </label>
-
-            <button id="favoriteButton" class="secondary" style="padding:6px 10px;font-size:0.82rem;">
-              ★ Favorite → White list
-            </button>
-
-            <button id="discoButton" class="secondary" style="padding:6px 10px;font-size:0.82rem;">
-              ✦ Disco
-            </button>
+            <button id="favoriteButton" class="secondary" style="font-size:.8rem;padding:5px 9px;">★ Favorite → White</button>
+            <button id="discoButton" class="secondary" style="font-size:.8rem;padding:5px 9px;">✦ Disco</button>
           </div>
         </div>
 
-        <!-- Right column: quick actions + battery -->
+        <!-- Right: power, next, stats -->
         <div>
           <div class="section-title">Power & transport</div>
           <div class="row wrap" style="gap:6px;">
-            <button id="onButton" class="secondary" style="padding:6px 10px;font-size:0.82rem;">
-              Power ON
-            </button>
-            <button id="offButton" class="secondary" style="padding:6px 10px;font-size:0.82rem;">
-              Power OFF
-            </button>
-            <button id="nextButton" class="secondary" style="padding:6px 10px;font-size:0.82rem;">
-              Next pattern
-            </button>
+            <button id="onButton"  class="secondary" style="font-size:.8rem;padding:5px 9px;">Power ON</button>
+            <button id="offButton" class="secondary" style="font-size:.8rem;padding:5px 9px;">Power OFF</button>
+            <button id="nextButton" class="secondary" style="font-size:.8rem;padding:5px 9px;">Next pattern</button>
           </div>
 
-          <div class="section-title" style="margin-top:12px;">Battery & metrics</div>
+          <div class="section-title" style="margin-top:10px;">Battery & live stats</div>
           <div class="stats-row">
             <div class="stat-box">
-              <span class="stat-label">Battery:</span>
+              <span class="stat-label">Battery</span>
               <span id="batteryPercent" class="stat-value">--%</span>
             </div>
             <div class="stat-box">
-              <span class="stat-label">Voltage:</span>
+              <span class="stat-label">Voltage</span>
               <span id="batteryVoltage" class="stat-value">-- V</span>
             </div>
             <div class="stat-box">
-              <span class="stat-label">Mic:</span>
+              <span class="stat-label">Mic</span>
               <span id="micLevel" class="stat-value">--</span>
             </div>
             <div class="stat-box">
-              <span class="stat-label">IMU | |a|:</span>
+              <span class="stat-label">|a|</span>
               <span id="imuMag" class="stat-value">--</span>
             </div>
-          </div>
-
-          <div class="subtitle" style="margin-top:10px;max-width:320px;">
-            Bluetooth commands are sent instantly as you drag sliders or click controls.
-            IMU and mic data stream live while connected.
           </div>
         </div>
       </div>
 
       <div class="footer-note">
-        Tip: Pattern 0 in each list is the meta pattern that cycles automatically.
+        0 in each list = meta; cycles through that list using dwell T.
       </div>
     </div>
 
-    <!-- RIGHT TOP: IMU graph -->
+    <!-- IMU graph -->
     <div class="card">
       <div class="card-header">
-        <div>
-          <div class="title">
-            <div class="title-dot"></div>
-            IMU Live View
-          </div>
-          <div class="subtitle">
-            Accelerometer axes X/Y/Z streamed from LSM6DS3
-          </div>
+        <div class="title-row">
+          <div class="title"><div class="dot"></div>IMU Live</div>
+          <div class="subtitle">Accelerometer X/Y/Z (g) • 30 s window</div>
         </div>
-        <span class="pill">~25 Hz stream</span>
+        <div class="pill">~25 Hz</div>
       </div>
-      <div class="graphs-container">
-        <canvas id="imuChart"></canvas>
-      </div>
+      <canvas id="imuChart"></canvas>
     </div>
 
-    <!-- RIGHT BOTTOM: Mic graph -->
+    <!-- Mic graph -->
     <div class="card">
       <div class="card-header">
-        <div>
-          <div class="title">
-            <div class="title-dot"></div>
-            Mic & Audio Reactivity
-          </div>
-          <div class="subtitle">
-            RMS amplitude from PDM mic (normalized 0–1)
-          </div>
+        <div class="title-row">
+          <div class="title"><div class="dot"></div>Mic Level</div>
+          <div class="subtitle">PDM RMS (scaled 0–1) • 30 s window</div>
         </div>
-        <span class="pill">Mic monitor</span>
+        <div class="pill">Audio reactivity</div>
       </div>
-      <div class="graphs-container">
-        <canvas id="micChart"></canvas>
-      </div>
+      <canvas id="micChart"></canvas>
     </div>
   </div>
 
@@ -586,50 +396,41 @@
     const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
     const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
-    let device = null;
-    let server = null;
-    let service = null;
-    let rxChar = null;
-    let txChar = null;
-
+    let device = null, server = null, service = null, rxChar = null, txChar = null;
     let rxBuffer = '';
 
-    const connectButton     = document.getElementById('connectButton');
-    const connectLabel      = document.getElementById('connectLabel');
-    const deviceNameLabel   = document.getElementById('deviceNameLabel');
-    const statusDot         = document.getElementById('statusDot');
-    const statusText        = document.getElementById('statusText');
+    const connectButton = document.getElementById('connectButton');
+    const connectLabel  = document.getElementById('connectLabel');
+    const deviceNameLabel = document.getElementById('deviceNameLabel');
+    const statusDot   = document.getElementById('statusDot');
+    const statusText  = document.getElementById('statusText');
 
-    const listCircles       = document.querySelectorAll('.list-circle');
-    const patternSlider     = document.getElementById('patternSlider');
-    const patternValue      = document.getElementById('patternValue');
-    const brightnessSlider  = document.getElementById('brightnessSlider');
-    const brightnessValue   = document.getElementById('brightnessValue');
-    const tSlider           = document.getElementById('tSlider');
-    const tValue            = document.getElementById('tValue');
-    const sleepToggle       = document.getElementById('sleepToggle');
-    const favoriteButton    = document.getElementById('favoriteButton');
-    const discoButton       = document.getElementById('discoButton');
-    const onButton          = document.getElementById('onButton');
-    const offButton         = document.getElementById('offButton');
-    const nextButton        = document.getElementById('nextButton');
+    const listCircles = document.querySelectorAll('.list-circle');
+    const patternSlider = document.getElementById('patternSlider');
+    const patternValue  = document.getElementById('patternValue');
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    const brightnessValue  = document.getElementById('brightnessValue');
+    const tSlider = document.getElementById('tSlider');
+    const tValue  = document.getElementById('tValue');
+    const sleepToggle = document.getElementById('sleepToggle');
+    const favoriteButton = document.getElementById('favoriteButton');
+    const discoButton    = document.getElementById('discoButton');
+    const onButton  = document.getElementById('onButton');
+    const offButton = document.getElementById('offButton');
+    const nextButton= document.getElementById('nextButton');
 
-    const batteryPercentEl  = document.getElementById('batteryPercent');
-    const batteryVoltageEl  = document.getElementById('batteryVoltage');
-    const micLevelEl        = document.getElementById('micLevel');
-    const imuMagEl          = document.getElementById('imuMag');
+    const batteryPercentEl = document.getElementById('batteryPercent');
+    const batteryVoltageEl = document.getElementById('batteryVoltage');
+    const micLevelEl       = document.getElementById('micLevel');
+    const imuMagEl         = document.getElementById('imuMag');
 
-    // IMU chart data – 30 seconds at ~25 Hz -> 750 samples
-    const imuHistoryLen = 750;
-    let imuTime = [];
-    let imuX = [];
-    let imuY = [];
-    let imuZ = [];
-
-    // Mic chart data – same 30s window
-    const micHistoryLen = 750;
-    let micTime = [];
-    let micVals = [];
+    // IMU data arrays (30s at ~25Hz -> 750 samples)
+    const IMU_LEN = 750;
+    let imuTime = [], imuX = [], imuY = [], imuZ = [];
+    // Mic data arrays
+    const MIC_LEN = 750;
+    let micTime = [], micVals = [];
+    let tCounter = 0;
 
     let imuChart, micChart;
 
@@ -638,87 +439,66 @@
       const micCtx = document.getElementById('micChart').getContext('2d');
 
       imuChart = new Chart(imuCtx, {
-        type: 'line',
-        data: {
-          labels: imuTime,
-          datasets: [
-            { label: 'ax (g)', data: imuX, borderWidth: 1, fill: false },
-            { label: 'ay (g)', data: imuY, borderWidth: 1, fill: false },
-            { label: 'az (g)', data: imuZ, borderWidth: 1, fill: false },
+        type:'line',
+        data:{ labels:imuTime,
+          datasets:[
+            { label:'ax', data:imuX, borderWidth:1, fill:false },
+            { label:'ay', data:imuY, borderWidth:1, fill:false },
+            { label:'az', data:imuZ, borderWidth:1, fill:false }
           ]
         },
-        options: {
-          animation: false,
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { display: false },
-            y: {
-              suggestedMin: -2,
-              suggestedMax: 2,
-              grid: { color: 'rgba(255,255,255,0.07)' },
-              ticks: {
-                color: '#cfd3ff',
-                font: { size: 10 }
-              }
+        options:{
+          animation:false,
+          responsive:true,
+          maintainAspectRatio:false,
+          scales:{
+            x:{ display:false },
+            y:{
+              suggestedMin:-2,
+              suggestedMax:2,
+              grid:{ color:'rgba(255,255,255,0.07)' },
+              ticks:{ color:'#d0d4ff', font:{ size:10 } }
             }
           },
-          plugins: {
-            legend: {
-              labels: {
-                color: '#e0e4ff',
-                font: { size: 10 }
-              }
-            }
+          plugins:{
+            legend:{ labels:{ color:'#e0e4ff', font:{ size:10 } } }
           }
         }
       });
 
       micChart = new Chart(micCtx, {
-        type: 'line',
-        data: {
-          labels: micTime,
-          datasets: [
-            {
-              label: 'Mic level',
-              data: micVals,
-              borderWidth: 1,
-              fill: true,
-              backgroundColor: 'rgba(255, 79, 216, 0.14)',
-            }
-          ]
+        type:'line',
+        data:{ labels:micTime,
+          datasets:[{
+            label:'Mic',
+            data:micVals,
+            borderWidth:1,
+            fill:true,
+            backgroundColor:'rgba(255,79,216,0.16)'
+          }]
         },
-        options: {
-          animation: false,
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { display: false },
-            y: {
-              suggestedMin: 0,
-              suggestedMax: 1,
-              grid: { color: 'rgba(255,255,255,0.07)' },
-              ticks: {
-                color: '#cfd3ff',
-                font: { size: 10 }
-              }
+        options:{
+          animation:false,
+          responsive:true,
+          maintainAspectRatio:false,
+          scales:{
+            x:{ display:false },
+            y:{
+              suggestedMin:0,
+              suggestedMax:1,
+              grid:{ color:'rgba(255,255,255,0.07)' },
+              ticks:{ color:'#d0d4ff', font:{ size:10 } }
             }
           },
-          plugins: {
-            legend: {
-              labels: {
-                color: '#e0e4ff',
-                font: { size: 10 }
-              }
-            }
+          plugins:{
+            legend:{ labels:{ color:'#e0e4ff', font:{ size:10 } } }
           }
         }
       });
     }
-
     initCharts();
 
-    function setConnectedUI(connected, name = '') {
+    function setConnectedUI(connected, name='') {
       if (connected) {
         statusDot.classList.add('status-connected');
         statusText.textContent = 'Connected';
@@ -735,72 +515,55 @@
     async function connect() {
       try {
         device = await navigator.bluetooth.requestDevice({
-          filters: [
-            { name: 'FiddleStIXV1' },
-            { namePrefix: 'FiddleStIXV1' }
+          filters:[
+            { name:'FiddleStIXV1' },
+            { namePrefix:'FiddleStIXV1' }
           ],
-          optionalServices: [NUS_SERVICE_UUID]
+          optionalServices:[NUS_SERVICE_UUID]
         });
-
         device.addEventListener('gattserverdisconnected', () => {
           setConnectedUI(false);
-          device = null;
-          server = null;
-          service = null;
-          rxChar = null;
-          txChar = null;
+          device = server = service = rxChar = txChar = null;
         });
-
-        server = await device.gatt.connect();
+        server  = await device.gatt.connect();
         service = await server.getPrimaryService(NUS_SERVICE_UUID);
-        rxChar = await service.getCharacteristic(NUS_RX_CHAR_UUID);
-        txChar = await service.getCharacteristic(NUS_TX_CHAR_UUID);
-
+        rxChar  = await service.getCharacteristic(NUS_RX_CHAR_UUID);
+        txChar  = await service.getCharacteristic(NUS_TX_CHAR_UUID);
         await txChar.startNotifications();
-        txChar.addEventListener('characteristicvaluechanged', handleNusNotification);
-
-        setConnectedUI(true, device.name || 'FiddleStIXV1');
+        txChar.addEventListener('characteristicvaluechanged', handleNotification);
+        setConnectedUI(true, device.name);
       } catch (err) {
-        console.error('BLE connect error:', err);
-        alert('Failed to connect via Web Bluetooth.\nCheck permissions and try again.');
+        console.error('Connect error', err);
+        alert('Web Bluetooth connection failed. Check permissions and try again.');
       }
     }
 
     async function disconnect() {
-      try {
-        if (device && device.gatt.connected) {
-          await device.gatt.disconnect();
-        }
-      } catch (err) {
-        console.error('BLE disconnect error:', err);
-      } finally {
-        setConnectedUI(false);
+      if (device && device.gatt.connected) {
+        await device.gatt.disconnect();
       }
+      setConnectedUI(false);
     }
 
     function sendCommand(cmd) {
       if (!rxChar) return;
       const data = new TextEncoder().encode(cmd + '\n');
-      rxChar.writeValue(data).catch(err => console.error('BLE write error:', err));
+      rxChar.writeValue(data).catch(e => console.error('Write error', e));
     }
-
-    let tCounter = 0;
-    let sleepOn = false;
 
     function selectListCircle(idx) {
       listCircles.forEach(c => {
-        if (parseInt(c.dataset.list, 10) === idx) {
-          c.classList.add('selected');
-        } else {
-          c.classList.remove('selected');
-        }
+        const l = parseInt(c.dataset.list,10);
+        if (l === idx) c.classList.add('selected');
+        else c.classList.remove('selected');
       });
     }
+    // default white list selected
+    document.querySelector('.list-circle[data-list="0"]').classList.add('selected');
 
     function handleTelemetryLine(line) {
       const parts = line.split(',');
       if (parts.length < 2) return;
-
       const topic = parts[0];
 
       if (topic === 'IMU' && parts.length >= 5) {
@@ -810,154 +573,121 @@
         const mag = parseFloat(parts[4]);
         imuMagEl.textContent = isFinite(mag) ? mag.toFixed(3) : '--';
 
-        imuTime.push(tCounter++);
+        imuTime.push(tCounter);
         imuX.push(ax);
         imuY.push(ay);
         imuZ.push(az);
-
-        if (imuTime.length > imuHistoryLen) {
-          imuTime.shift();
-          imuX.shift();
-          imuY.shift();
-          imuZ.shift();
+        if (imuTime.length > IMU_LEN) {
+          imuTime.shift(); imuX.shift(); imuY.shift(); imuZ.shift();
         }
-
         imuChart.update('none');
-      } else if (topic === 'MIC' && parts.length >= 2) {
+      }
+      else if (topic === 'MIC' && parts.length >= 2) {
         const level = parseFloat(parts[1]);
         micLevelEl.textContent = isFinite(level) ? level.toFixed(3) : '--';
-
         micTime.push(tCounter);
         micVals.push(level);
-        if (micTime.length > micHistoryLen) {
-          micTime.shift();
-          micVals.shift();
+        if (micTime.length > MIC_LEN) {
+          micTime.shift(); micVals.shift();
         }
         micChart.update('none');
-      } else if (topic === 'BAT' && parts.length >= 3) {
-        const pct = parseInt(parts[1], 10);
+      }
+      else if (topic === 'BAT' && parts.length >= 3) {
+        const pct = parseInt(parts[1],10);
         const v   = parseFloat(parts[2]);
-
         batteryPercentEl.textContent = isFinite(pct) ? pct + '%' : '--%';
         batteryVoltageEl.textContent = isFinite(v) ? v.toFixed(3) + ' V' : '-- V';
-      } else if (topic === 'PAT' && parts.length >= 7) {
-        const listIdx   = parseInt(parts[1], 10);
-        const patIdx    = parseInt(parts[2], 10);
-        const effIdx    = parseInt(parts[3], 10);
-        const mode      = parseInt(parts[4], 10);
-        const B         = parseInt(parts[5], 10);
-        const Tsec      = parseInt(parts[6], 10);
+      }
+      else if (topic === 'PAT' && parts.length >= 7) {
+        const listIdx = parseInt(parts[1],10);
+        const patIdx  = parseInt(parts[2],10);
+        const effIdx  = parseInt(parts[3],10);
+        const mode    = parseInt(parts[4],10);
+        const B       = parseInt(parts[5],10);
+        const Tsec    = parseInt(parts[6],10);
 
-        if (isFinite(listIdx)) {
-          selectListCircle(listIdx);
-        }
-
+        if (isFinite(listIdx)) selectListCircle(listIdx);
         if (isFinite(effIdx)) {
           patternSlider.value = effIdx;
           patternValue.textContent = effIdx;
         }
-
         if (isFinite(B)) {
           brightnessSlider.value = B;
           brightnessValue.textContent = B;
         }
-
         if (isFinite(Tsec)) {
           tSlider.value = Tsec;
           tValue.textContent = Tsec + ' s';
         }
 
-        if (mode === 5) { // MODE_SLEEP
-          sleepOn = true;
-          sleepToggle.classList.add('on');
-        } else {
-          sleepOn = false;
-          sleepToggle.classList.remove('on');
-        }
+        // sleep toggle purely from explicit commands, not PAT mode for now
       }
+
+      tCounter++;
     }
 
-    function handleNusNotification(event) {
-      const value = event.target.value;
-      const text = new TextDecoder().decode(value);
+    function handleNotification(event) {
+      const text = new TextDecoder().decode(event.target.value);
       rxBuffer += text;
-
       let idx;
       while ((idx = rxBuffer.indexOf('\n')) >= 0) {
         const line = rxBuffer.slice(0, idx).trim();
         rxBuffer = rxBuffer.slice(idx + 1);
-        if (line.length > 0) {
-          handleTelemetryLine(line);
-        }
+        if (line.length) handleTelemetryLine(line);
       }
     }
 
+    // UI events
     connectButton.addEventListener('click', () => {
-      if (device && device.gatt && device.gatt.connected) {
-        disconnect();
-      } else {
-        connect();
-      }
+      if (device && device.gatt && device.gatt.connected) disconnect();
+      else connect();
     });
 
     listCircles.forEach(circle => {
       circle.addEventListener('click', () => {
-        const listIdx = parseInt(circle.dataset.list, 10);
+        const listIdx = parseInt(circle.dataset.list,10);
         selectListCircle(listIdx);
         sendCommand('L' + listIdx);
       });
     });
 
-    document.querySelector('.list-circle[data-list="0"]').classList.add('selected');
-
     patternSlider.addEventListener('input', () => {
-      const val = parseInt(patternSlider.value, 10);
-      patternValue.textContent = val;
-      sendCommand('I' + val);
+      const v = parseInt(patternSlider.value,10);
+      patternValue.textContent = v;
+      sendCommand('I' + v);
     });
 
     brightnessSlider.addEventListener('input', () => {
-      const val = parseInt(brightnessSlider.value, 10);
-      brightnessValue.textContent = val;
-      sendCommand('B' + val);
+      const v = parseInt(brightnessSlider.value,10);
+      brightnessValue.textContent = v;
+      sendCommand('B' + v);
     });
 
     tSlider.addEventListener('input', () => {
-      const val = parseInt(tSlider.value, 10);
-      tValue.textContent = val + ' s';
-      sendCommand('T' + val);
+      const v = parseInt(tSlider.value,10);
+      tValue.textContent = v + ' s';
+      sendCommand('T' + v);
     });
 
+    let sleepOn = true;
     sleepToggle.addEventListener('click', () => {
       sleepOn = !sleepOn;
       sleepToggle.classList.toggle('on', sleepOn);
       sendCommand(sleepOn ? 'S1' : 'S0');
     });
 
-    favoriteButton.addEventListener('click', () => {
-      sendCommand('F');
-    });
+    favoriteButton.addEventListener('click', () => sendCommand('F'));
+    discoButton.addEventListener('click', () => sendCommand('D1'));
+    onButton.addEventListener('click', () => sendCommand('ON'));
+    offButton.addEventListener('click', () => sendCommand('OFF'));
 
-    discoButton.addEventListener('click', () => {
-      sendCommand('D1');
-    });
-
-    onButton.addEventListener('click', () => {
-      sendCommand('ON');
-    });
-
-    offButton.addEventListener('click', () => {
-      sendCommand('OFF');
-    });
-
-    // Next pattern in current list: just move slider and send I#
     nextButton.addEventListener('click', () => {
-      let val = parseInt(patternSlider.value, 10);
-      if (!isFinite(val)) val = 0;
-      val = (val + 1) % 101; // 0..100 (0 is meta)
-      patternSlider.value = val;
-      patternValue.textContent = val;
-      sendCommand('I' + val);
+      let v = parseInt(patternSlider.value,10);
+      if (!isFinite(v)) v = 0;
+      v = (v + 1) % 32;
+      patternSlider.value = v;
+      patternValue.textContent = v;
+      sendCommand('I' + v);
     });
   </script>
 </body>
