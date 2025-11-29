@@ -1,454 +1,508 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>FiddleStyx V1 Control</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Chart.js CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Chart.js for IMU graph -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111;
-      color: #eee;
+      background: #050608;
+      color: #f5f5f5;
       margin: 0;
       padding: 0;
     }
-    .container {
-      max-width: 900px;
+    .page {
+      max-width: 960px;
       margin: 0 auto;
       padding: 16px;
     }
     h1 {
+      margin-top: 0;
       font-size: 1.6rem;
-      margin-bottom: 8px;
+      text-align: center;
     }
-    h2 {
-      font-size: 1.1rem;
-      margin-top: 16px;
-      margin-bottom: 4px;
-    }
-    button {
-      padding: 8px 14px;
-      margin: 4px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #2d8cff;
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    button.secondary {
-      background: #444;
-    }
-    button.danger {
-      background: #d9534f;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    input[type="number"] {
-      width: 60px;
-      padding: 4px;
-      border-radius: 4px;
-      border: 1px solid #444;
-      background: #222;
-      color: #eee;
+    .card {
+      background: #11131a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
     .row {
       display: flex;
       flex-wrap: wrap;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 8px;
     }
     .row > * {
-      margin-right: 8px;
-      margin-bottom: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+    button {
+      background: #2b6aff;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    button:hover {
+      background: #3b7bff;
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      background: #444;
+      cursor: default;
+      transform: none;
     }
     .status {
       font-size: 0.9rem;
-      color: #ccc;
-      margin-top: 8px;
+      opacity: 0.85;
     }
-    #battery-bar {
+    .label {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .value-box {
+      min-width: 3ch;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .list-circles {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .list-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .list-circle.selected {
+      border-color: #ffffff;
+      box-shadow: 0 0 10px rgba(255,255,255,0.7);
+    }
+    .battery-bar {
+      width: 100%;
       height: 10px;
-      background: #333;
-      border-radius: 5px;
+      border-radius: 999px;
+      background: #222;
       overflow: hidden;
-      margin-top: 4px;
-      width: 200px;
     }
-    #battery-bar-inner {
+    .battery-bar-inner {
       height: 100%;
+      background: linear-gradient(90deg, #ff5555, #ffd755, #55ff77);
       width: 0%;
-      background: linear-gradient(90deg, #f00, #ff0, #0f0);
+      transition: width 0.2s ease;
     }
-    #mic-level-bar {
-      height: 10px;
-      background: #333;
-      border-radius: 5px;
+    .mic-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #222;
       overflow: hidden;
-      width: 200px;
     }
-    #mic-level-bar-inner {
+    .mic-bar-inner {
       height: 100%;
+      background: #4fd5ff;
       width: 0%;
-      background: linear-gradient(90deg, #0ff, #09f);
+      transition: width 0.05s linear;
     }
     canvas {
-      background: #000;
-      border-radius: 6px;
+      max-width: 100%;
     }
-    .small-text {
-      font-size: 0.85rem;
-      color: #aaa;
+    @media (max-width: 600px) {
+      .row {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>FiddleStyx V1 Control</h1>
-    <p class="small-text">
-      Connect via Web Bluetooth, send commands, and view live IMU, microphone and battery data.
-      For iPhone, you'll need a compatible browser on macOS or another device that supports Web Bluetooth.
-    </p>
+<div class="page">
+  <h1>FiddleStyx V1 Control</h1>
 
-    <!-- Connection controls -->
-    <h2>Connection</h2>
+  <!-- Connection card -->
+  <div class="card">
     <div class="row">
-      <button id="connect-button">Connect</button>
-      <button id="disconnect-button" class="secondary" disabled>Disconnect</button>
-      <span id="connection-status" class="status">Not connected</span>
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+      <div class="status" id="statusText">Not connected</div>
     </div>
-
-    <!-- Basic controls -->
-    <h2>Device Controls</h2>
-    <div class="row">
-      <button id="btn-on">ON</button>
-      <button id="btn-off" class="secondary">OFF</button>
-      <button id="btn-disco" class="secondary">DISCO (D1)</button>
-      <button id="btn-play" class="secondary">Exit DISCO (D0)</button>
+    <div class="row" style="margin-top: 8px;">
+      <div>
+        <div class="label">Battery</div>
+        <div class="battery-bar">
+          <div class="battery-bar-inner" id="batteryInner"></div>
+        </div>
+        <div class="status" id="batteryText">--%</div>
+      </div>
+      <div>
+        <div class="label">Mic level</div>
+        <div class="mic-bar">
+          <div class="mic-bar-inner" id="micInner"></div>
+        </div>
+      </div>
     </div>
-
-    <div class="row">
-      <label>Brightness (B0-7):</label>
-      <input type="number" id="brightness-input" min="0" max="7" value="4" />
-      <button id="brightness-set">Set</button>
-    </div>
-
-    <div class="row">
-      <label>List (L0-7):</label>
-      <input type="number" id="list-input" min="0" max="7" value="0" />
-      <button id="list-set">Set</button>
-
-      <label>Pattern (I0-49):</label>
-      <input type="number" id="pattern-input" min="0" max="49" value="0" />
-      <button id="pattern-set">Set</button>
-
-      <button id="pattern-next" class="secondary">Next pattern (N)</button>
-    </div>
-
-    <div class="row">
-      <label>Sleep:</label>
-      <button id="sleep-on" class="secondary">S1 (enable)</button>
-      <button id="sleep-off" class="secondary">S0 (disable)</button>
-    </div>
-
-    <!-- Battery -->
-    <h2>Battery</h2>
-    <div class="row">
-      <span id="battery-text">Battery: --% (-- V)</span>
-    </div>
-    <div id="battery-bar">
-      <div id="battery-bar-inner"></div>
-    </div>
-
-    <!-- Mic level -->
-    <h2>Microphone Level</h2>
-    <div class="row">
-      <span id="mic-text">Level: 0.00</span>
-    </div>
-    <div id="mic-level-bar">
-      <div id="mic-level-bar-inner"></div>
-    </div>
-
-    <!-- IMU chart -->
-    <h2>IMU Acceleration (g)</h2>
-    <p class="small-text">X, Y, Z plotted separately so you can see exactly what the sensor sees.</p>
-    <canvas id="imu-chart" width="800" height="300"></canvas>
-
-    <!-- Raw log -->
-    <h2>Raw Telemetry Log</h2>
-    <pre id="log" style="background:#000; color:#0f0; padding:8px; max-height:200px; overflow:auto; border-radius:6px; font-size:0.8rem;"></pre>
   </div>
 
-  <script>
-    // Nordic UART Service UUIDs (Adafruit/Bluefruit style)
-    const NUS_SERVICE_UUID        = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_RX_CHARACTERISTIC   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // from peripheral to central (notify)
-    const NUS_TX_CHARACTERISTIC   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // from central to peripheral (write)
+  <!-- Controls card -->
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="label">Brightness (B)</div>
+        <div class="slider-row">
+          <input type="range" id="brightnessSlider" min="0" max="7" value="4">
+          <div class="value-box" id="brightnessValue">4</div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Meta window T (ms)</div>
+        <div class="slider-row">
+          <input type="range" id="tSlider" min="500" max="15000" step="100" value="8000">
+          <div class="value-box" id="tValue">8000</div>
+        </div>
+      </div>
+    </div>
 
-    let bleDevice           = null;
-    let gattServer          = null;
-    let txCharacteristic    = null;
-    let rxCharacteristic    = null;
+    <div style="margin-top: 12px;">
+      <div class="label">List (P) – click a color</div>
+      <div class="list-circles" id="listCircles">
+        <!-- WROYGBIV -->
+        <div class="list-circle" data-index="0" style="background:#ffffff;"></div>
+        <div class="list-circle" data-index="1" style="background:#ff4040;"></div>
+        <div class="list-circle" data-index="2" style="background:#ff8c2a;"></div>
+        <div class="list-circle" data-index="3" style="background:#ffd52f;"></div>
+        <div class="list-circle" data-index="4" style="background:#46d96a;"></div>
+        <div class="list-circle" data-index="5" style="background:#3c7eff;"></div>
+        <div class="list-circle" data-index="6" style="background:#7b3cff;"></div>
+        <div class="list-circle" data-index="7" style="background:#ff3ce6;"></div>
+      </div>
+    </div>
 
-    let receiveBuffer       = '';
+    <div style="margin-top: 12px;">
+      <div class="label">Pattern index (I)</div>
+      <div class="slider-row">
+        <input type="range" id="patternSlider" min="0" max="49" value="0">
+        <div class="value-box" id="patternValue">0</div>
+      </div>
+    </div>
 
-    const connectButton     = document.getElementById('connect-button');
-    const disconnectButton  = document.getElementById('disconnect-button');
-    const connStatusSpan    = document.getElementById('connection-status');
-    const logElem           = document.getElementById('log');
+    <div style="margin-top: 12px;" class="row">
+      <button id="playBtn">ON (PLAY)</button>
+      <button id="offBtn">OFF</button>
+      <button id="discoOnBtn">DISCO (D1)</button>
+      <button id="discoOffBtn">DISCO OFF (D0)</button>
+    </div>
+  </div>
 
-    const batteryText       = document.getElementById('battery-text');
-    const batteryBarInner   = document.getElementById('battery-bar-inner');
+  <!-- IMU graph card -->
+  <div class="card">
+    <div class="label">IMU Acceleration (ax, ay, az)</div>
+    <canvas id="imuChart" height="220"></canvas>
+  </div>
 
-    const micText           = document.getElementById('mic-text');
-    const micBarInner       = document.getElementById('mic-level-bar-inner');
+  <!-- Raw data (for debugging) -->
+  <div class="card">
+    <div class="label">Last data messages</div>
+    <pre id="log" style="max-height: 160px; overflow-y: auto; font-size: 0.75rem; background:#050608; padding:8px; border-radius:8px;"></pre>
+  </div>
 
-    // IMU chart setup
-    const imuCtx = document.getElementById('imu-chart').getContext('2d');
-    const MAX_POINTS = 200;
+</div>
 
-    const imuData = {
-      labels: [],
-      ax: [],
-      ay: [],
-      az: []
-    };
+<script>
+  // BLE NUS UUIDs (Nordic UART Service)
+  const NUS_SERVICE_UUID        = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const NUS_TX_CHAR_UUID        = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify from device
+  const NUS_RX_CHAR_UUID        = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write to device
 
-    const imuChart = new Chart(imuCtx, {
-      type: 'line',
-      data: {
-        labels: imuData.labels,
-        datasets: [
-          {
-            label: 'Ax (g)',
-            data: imuData.ax,
-            borderWidth: 1,
-            tension: 0.1,
-          },
-          {
-            label: 'Ay (g)',
-            data: imuData.ay,
-            borderWidth: 1,
-            tension: 0.1,
-          },
-          {
-            label: 'Az (g)',
-            data: imuData.az,
-            borderWidth: 1,
-            tension: 0.1,
-          }
-        ]
+  let bleDevice = null;
+  let gattServer = null;
+  let nusService = null;
+  let txCharacteristic = null;
+  let rxCharacteristic = null;
+  let isConnected = false;
+  let lineBuffer = '';
+
+  const connectBtn      = document.getElementById('connectBtn');
+  const disconnectBtn   = document.getElementById('disconnectBtn');
+  const statusText      = document.getElementById('statusText');
+  const batteryInner    = document.getElementById('batteryInner');
+  const batteryText     = document.getElementById('batteryText');
+  const micInner        = document.getElementById('micInner');
+  const logElem         = document.getElementById('log');
+  const brightnessSlider= document.getElementById('brightnessSlider');
+  const brightnessValue = document.getElementById('brightnessValue');
+  const tSlider         = document.getElementById('tSlider');
+  const tValue          = document.getElementById('tValue');
+  const listCircles     = document.getElementById('listCircles');
+  const patternSlider   = document.getElementById('patternSlider');
+  const patternValue    = document.getElementById('patternValue');
+  const playBtn         = document.getElementById('playBtn');
+  const offBtn          = document.getElementById('offBtn');
+  const discoOnBtn      = document.getElementById('discoOnBtn');
+  const discoOffBtn     = document.getElementById('discoOffBtn');
+
+  // --------------------------------------------------------------------------
+  // IMU chart setup
+  // --------------------------------------------------------------------------
+  const imuCtx = document.getElementById('imuChart').getContext('2d');
+  const imuData = {
+    labels: [],
+    datasets: [
+      {
+        label: 'ax (g)',
+        borderColor: '#ff5555',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        data: []
       },
-      options: {
-        animation: false,
-        scales: {
-          x: {
-            ticks: {
-              display: false
-            }
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'g'
-            }
+      {
+        label: 'ay (g)',
+        borderColor: '#55ff88',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        data: []
+      },
+      {
+        label: 'az (g)',
+        borderColor: '#5599ff',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        data: []
+      }
+    ]
+  };
+  const imuChart = new Chart(imuCtx, {
+    type: 'line',
+    data: imuData,
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#eee'
           }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { display: false },
+          grid: { display: false }
         },
-        plugins: {
-          legend: {
-            labels: {
-              color: '#eee'
-            }
-          }
-        }
-      }
-    });
-
-    function appendLog(line) {
-      logElem.textContent += line + '\n';
-      logElem.scrollTop = logElem.scrollHeight;
-    }
-
-    async function connect() {
-      try {
-        const device = await navigator.bluetooth.requestDevice({
-          filters: [
-            { namePrefix: 'FiddleStIXV1' }
-          ],
-          optionalServices: [NUS_SERVICE_UUID]
-        });
-
-        bleDevice = device;
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-        connStatusSpan.textContent = 'Connecting...';
-        const server = await bleDevice.gatt.connect();
-        gattServer = server;
-
-        const service = await gattServer.getPrimaryService(NUS_SERVICE_UUID);
-        rxCharacteristic = await service.getCharacteristic(NUS_RX_CHARACTERISTIC);
-        txCharacteristic = await service.getCharacteristic(NUS_TX_CHARACTERISTIC);
-
-        await rxCharacteristic.startNotifications();
-        rxCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-
-        connStatusSpan.textContent = 'Connected to ' + bleDevice.name;
-        connectButton.disabled = true;
-        disconnectButton.disabled = false;
-
-        appendLog('Connected to ' + bleDevice.name);
-
-      } catch (error) {
-        console.error(error);
-        connStatusSpan.textContent = 'Error: ' + error;
-        appendLog('Error: ' + error);
-      }
-    }
-
-    function onDisconnected() {
-      connStatusSpan.textContent = 'Disconnected';
-      connectButton.disabled = false;
-      disconnectButton.disabled = true;
-      txCharacteristic = null;
-      rxCharacteristic = null;
-    }
-
-    async function disconnect() {
-      if (!bleDevice) return;
-      if (bleDevice.gatt.connected) {
-        await bleDevice.gatt.disconnect();
-      }
-    }
-
-    function handleNotifications(event) {
-      const value = event.target.value;
-      const decoder = new TextDecoder('utf-8');
-      const text = decoder.decode(value);
-      receiveBuffer += text;
-
-      // Process line by line
-      let index;
-      while ((index = receiveBuffer.indexOf('\n')) >= 0) {
-        const line = receiveBuffer.slice(0, index).trim();
-        receiveBuffer = receiveBuffer.slice(index + 1);
-        if (line.length > 0) {
-          parseTelemetryLine(line);
+        y: {
+          ticks: { color: '#ccc' },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          suggestedMin: -2,
+          suggestedMax: 2
         }
       }
     }
+  });
+  const MAX_SAMPLES = 200;
 
-    function parseTelemetryLine(line) {
-      appendLog(line);
-      const parts = line.split(',');
-      if (parts[0] === 'IMU' && parts.length >= 5) {
-        const ax = parseFloat(parts[1]);
-        const ay = parseFloat(parts[2]);
-        const az = parseFloat(parts[3]);
-        updateImuChart(ax, ay, az);
-      } else if (parts[0] === 'MIC' && parts.length >= 2) {
-        const level = parseFloat(parts[1]);
-        updateMic(level);
-      } else if (parts[0] === 'BAT' && parts.length >= 3) {
-        const pct = parseFloat(parts[1]);
-        const volt = parseFloat(parts[2]);
-        updateBattery(pct, volt);
+  function addImuSample(ax, ay, az) {
+    imuData.labels.push('');
+    imuData.datasets[0].data.push(ax);
+    imuData.datasets[1].data.push(ay);
+    imuData.datasets[2].data.push(az);
+
+    if (imuData.labels.length > MAX_SAMPLES) {
+      imuData.labels.shift();
+      imuData.datasets.forEach(ds => ds.data.shift());
+    }
+    imuChart.update('none');
+  }
+
+  // --------------------------------------------------------------------------
+  // BLE helpers
+  // --------------------------------------------------------------------------
+  async function connect() {
+    try {
+      statusText.textContent = 'Requesting BLE device...';
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ name: 'FiddleStIXV1' }],
+        optionalServices: [NUS_SERVICE_UUID]
+      });
+
+      bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+      statusText.textContent = 'Connecting...';
+      gattServer = await bleDevice.gatt.connect();
+      nusService = await gattServer.getPrimaryService(NUS_SERVICE_UUID);
+
+      txCharacteristic = await nusService.getCharacteristic(NUS_TX_CHAR_UUID);
+      rxCharacteristic = await nusService.getCharacteristic(NUS_RX_CHAR_UUID);
+
+      await txCharacteristic.startNotifications();
+      txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+      isConnected = true;
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+      statusText.textContent = 'Connected to FiddleStIXV1';
+    } catch (error) {
+      console.error(error);
+      statusText.textContent = 'Connection failed: ' + error.message;
+      isConnected = false;
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+    }
+  }
+
+  function onDisconnected() {
+    isConnected = false;
+    connectBtn.disabled = false;
+    disconnectBtn.disabled = true;
+    statusText.textContent = 'Disconnected';
+  }
+
+  async function disconnect() {
+    if (bleDevice && bleDevice.gatt.connected) {
+      await bleDevice.gatt.disconnect();
+    }
+  }
+
+  async function sendCommand(cmd) {
+    if (!isConnected || !rxCharacteristic) return;
+    const data = new TextEncoder().encode(cmd + '\n');
+    try {
+      await rxCharacteristic.writeValue(data);
+    } catch (err) {
+      console.error('Write error', err);
+    }
+  }
+
+  function handleNotifications(event) {
+    const value = event.target.value;
+    const text = new TextDecoder().decode(value);
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\n' || ch === '\r') {
+        if (lineBuffer.length > 0) {
+          handleLine(lineBuffer);
+          lineBuffer = '';
+        }
+      } else {
+        lineBuffer += ch;
+        if (lineBuffer.length > 200) {
+          lineBuffer = '';
+        }
       }
     }
+  }
 
-    function updateImuChart(ax, ay, az) {
-      const t = (new Date()).toLocaleTimeString();
+  function logLine(line) {
+    const el = logElem;
+    el.textContent = line + '\n' + el.textContent;
+  }
 
-      imuData.labels.push(t);
-      imuData.ax.push(ax);
-      imuData.ay.push(ay);
-      imuData.az.push(az);
-
-      if (imuData.labels.length > MAX_POINTS) {
-        imuData.labels.shift();
-        imuData.ax.shift();
-        imuData.ay.shift();
-        imuData.az.shift();
-      }
-
-      imuChart.update();
+  function handleLine(line) {
+    logLine(line);
+    const parts = line.split(',');
+    if (parts[0] === 'IMU' && parts.length >= 5) {
+      const ax = parseFloat(parts[1]);
+      const ay = parseFloat(parts[2]);
+      const az = parseFloat(parts[3]);
+      addImuSample(ax, ay, az);
+    } else if (parts[0] === 'MIC' && parts.length >= 2) {
+      const level = parseFloat(parts[1]);
+      const pct = Math.max(0, Math.min(1, level)) * 100;
+      micInner.style.width = pct.toFixed(0) + '%';
+    } else if (parts[0] === 'BAT' && parts.length >= 3) {
+      const pct = parseInt(parts[1], 10);
+      const volt = parseFloat(parts[2]);
+      batteryInner.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      batteryText.textContent = pct + '%  (' + volt.toFixed(2) + 'V)';
     }
+  }
 
-    function updateMic(level) {
-      if (isNaN(level)) level = 0;
-      if (level < 0) level = 0;
-      if (level > 1) level = 1;
-
-      micText.textContent = 'Level: ' + level.toFixed(3);
-      micBarInner.style.width = (level * 100).toFixed(1) + '%';
+  // --------------------------------------------------------------------------
+  // UI events
+  // --------------------------------------------------------------------------
+  connectBtn.addEventListener('click', () => {
+    if (!navigator.bluetooth) {
+      alert('Web Bluetooth not supported in this browser.');
+      return;
     }
+    connect();
+  });
 
-    function updateBattery(percent, voltage) {
-      if (isNaN(percent)) percent = 0;
-      if (isNaN(voltage)) voltage = 0;
-      if (percent < 0) percent = 0;
-      if (percent > 100) percent = 100;
+  disconnectBtn.addEventListener('click', () => {
+    disconnect();
+  });
 
-      batteryText.textContent = 'Battery: ' + percent.toFixed(0) + '% (' + voltage.toFixed(2) + ' V)';
-      batteryBarInner.style.width = percent.toFixed(0) + '%';
-    }
+  brightnessSlider.addEventListener('input', () => {
+    brightnessValue.textContent = brightnessSlider.value;
+  });
+  brightnessSlider.addEventListener('change', () => {
+    brightnessValue.textContent = brightnessSlider.value;
+    sendCommand('B' + brightnessSlider.value);
+  });
 
-    async function sendCommand(cmd) {
-      if (!txCharacteristic) {
-        appendLog('Not connected');
-        return;
-      }
-      const text = cmd + '\n';
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text);
-      try {
-        await txCharacteristic.writeValue(data);
-        appendLog('> ' + cmd);
-      } catch (e) {
-        console.error(e);
-        appendLog('Error sending: ' + e);
-      }
-    }
+  tSlider.addEventListener('input', () => {
+    tValue.textContent = tSlider.value;
+  });
+  tSlider.addEventListener('change', () => {
+    tValue.textContent = tSlider.value;
+    sendCommand('T' + tSlider.value);
+  });
 
-    // UI wiring
-    connectButton.addEventListener('click', connect);
-    disconnectButton.addEventListener('click', disconnect);
+  patternSlider.addEventListener('input', () => {
+    patternValue.textContent = patternSlider.value;
+  });
+  patternSlider.addEventListener('change', () => {
+    patternValue.textContent = patternSlider.value;
+    sendCommand('I' + patternSlider.value);
+  });
 
-    document.getElementById('btn-on').addEventListener('click', () => sendCommand('ON'));
-    document.getElementById('btn-off').addEventListener('click', () => sendCommand('OFF'));
-    document.getElementById('btn-disco').addEventListener('click', () => sendCommand('D1'));
-    document.getElementById('btn-play').addEventListener('click', () => sendCommand('D0'));
+  listCircles.addEventListener('click', (ev) => {
+    const target = ev.target;
+    if (!target.classList.contains('list-circle')) return;
+    const idx = target.getAttribute('data-index');
+    if (idx == null) return;
+    // Visual selection
+    Array.from(listCircles.children).forEach(c => c.classList.remove('selected'));
+    target.classList.add('selected');
+    sendCommand('L' + idx);
+  });
 
-    document.getElementById('brightness-set').addEventListener('click', () => {
-      const v = parseInt(document.getElementById('brightness-input').value, 10);
-      if (v >= 0 && v <= 7) {
-        sendCommand('B' + v);
-      }
-    });
+  playBtn.addEventListener('click', () => sendCommand('ON'));
+  offBtn.addEventListener('click', () => sendCommand('OFF'));
+  discoOnBtn.addEventListener('click', () => sendCommand('D1'));
+  discoOffBtn.addEventListener('click', () => sendCommand('D0'));
 
-    document.getElementById('list-set').addEventListener('click', () => {
-      const v = parseInt(document.getElementById('list-input').value, 10);
-      if (v >= 0 && v <= 7) {
-        sendCommand('L' + v);
-      }
-    });
+  // Initialize default UI state
+  brightnessValue.textContent = brightnessSlider.value;
+  tValue.textContent = tSlider.value;
+  patternValue.textContent = patternSlider.value;
+  // Default select list 0 (white)
+  listCircles.children[0].classList.add('selected');
+</script>
 
-    document.getElementById('pattern-set').addEventListener('click', () => {
-      const v = parseInt(document.getElementById('pattern-input').value, 10);
-      if (v >= 0 && v <= 49) {
-        sendCommand('I' + v);
-      }
-    });
-
-    document.getElementById('pattern-next').addEventListener('click', () => {
-      sendCommand('N');
-    });
-
-    document.getElementById('sleep-on').addEventListener('click', () => sendCommand('S1'));
-    document.getElementById('sleep-off').addEventListener('click', () => sendCommand('S0'));
-  </script>
 </body>
 </html>
+
