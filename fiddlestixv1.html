@@ -142,6 +142,807 @@
       box-shadow: 0 10px 22px rgba(255, 72, 72, 0.45);
     }
 
-    .status-dot
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      margin-right: 6px;
+      background: #ff9d41;
+      box-shadow: 0 0 8px rgba(255, 157, 65, 0.9);
+    }
+
+    .status-dot.connected {
+      background: #44ffaf;
+      box-shadow: 0 0 10px rgba(68, 255, 175, 0.9);
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-block {
+      background: radial-gradient(circle at top left, #22254b, #14162b);
+      border-radius: 14px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .control-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-value {
+      font-size: 0.78rem;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 25% 25%, #fff, #ff4ecd);
+      box-shadow: 0 0 0 4px rgba(255,78,205,0.25);
+      cursor: pointer;
+      border: none;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 25% 25%, #fff, #ff4ecd);
+      border: none;
+      box-shadow: 0 0 0 4px rgba(255,78,205,0.25);
+      cursor: pointer;
+    }
+
+    .badge {
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .toggle {
+      width: 42px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.16s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .toggle.on {
+      background: radial-gradient(circle at top left, #44ffaf, #19c56a);
+      border-color: rgba(0,0,0,0.5);
+    }
+
+    .toggle.on::after {
+      transform: translateX(18px);
+    }
+
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .list-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.35);
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.9);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease;
+    }
+
+    .list-circle span {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      color: #111;
+      font-weight: 700;
+      text-shadow: 0 0 4px rgba(255,255,255,0.7);
+    }
+
+    .list-circle.active {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.25);
+      border-color: #fff;
+    }
+
+    .pattern-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .pattern-chip {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.65);
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #111;
+      text-shadow: 0 0 4px rgba(255,255,255,0.7);
+    }
+
+    .pattern-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    canvas {
+      width: 100%;
+    }
+
+    .metrics-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .battery-bar {
+      width: 70px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .battery-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg,#ff5e5e,#ffc94f,#32ff86);
+      transition: width 0.2s ease;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Controls & status -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h1>FiddleStIX V1</h1>
+          <div class="status-line">
+            <div id="connDot" class="status-dot"></div>
+            <span id="connText">Disconnected</span>
+          </div>
+        </div>
+        <button id="connectBtn" class="btn">
+          <span>Connect</span> 🔗
+        </button>
+      </div>
+
+      <div class="controls-grid">
+        <!-- Mode & pattern -->
+        <div class="control-block">
+          <div class="control-label">
+            <span>Mode & Pattern</span>
+            <span class="pill">Live Control</span>
+          </div>
+
+          <div class="row">
+            <button id="playBtn" class="btn-secondary btn-small">Play</button>
+            <button id="discoBtn" class="btn-secondary btn-small">Disco</button>
+            <button id="nextBtn" class="btn-secondary btn-small">Next Pattern</button>
+            <button id="favBtn" class="btn-secondary btn-small">★ Favourite</button>
+          </div>
+
+          <div class="pattern-display">
+            <div id="patternChip" class="pattern-chip" style="background:#ffffff;">
+              0
+            </div>
+            <div class="pattern-text">
+              <div><strong id="patternLabel">List: White • Pattern: 0 (Meta)</strong></div>
+              <div style="font-size:0.72rem;">Circular cell shows list color & pattern number.</div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px;">
+            <div class="control-label">
+              <span>Pattern Index</span>
+              <span class="control-value"><span id="patternIdxVal">0</span> / 100</span>
+            </div>
+            <div class="slider-row">
+              <input id="patternSlider" type="range" min="0" max="100" value="0" />
+            </div>
+          </div>
+        </div>
+
+        <!-- List & brightness -->
+        <div class="control-block">
+          <div class="control-label">
+            <span>List & Brightness</span>
+            <span class="pill">Lists: W R O Y G B I V</span>
+          </div>
+
+          <div class="control-label" style="margin-top:4px;">
+            <span>List</span>
+            <span class="control-value" id="listLabel">White (0)</span>
+          </div>
+          <div class="list-row" id="listRow">
+            <!-- circles added by JS -->
+          </div>
+
+          <div style="margin-top:8px;">
+            <div class="control-label">
+              <span>Brightness</span>
+              <span class="control-value">B=<span id="BVal">4</span>/7</span>
+            </div>
+            <div class="slider-row">
+              <input id="brightnessSlider" type="range" min="1" max="7" step="1" value="4" />
+              <span class="badge">Low ⟷ High</span>
+            </div>
+          </div>
+
+          <div class="toggle-row" style="margin-top:10px;">
+            <div class="control-label" style="margin:0;">
+              <span>Sleep Mode</span>
+            </div>
+            <div id="sleepToggle" class="toggle"></div>
+          </div>
+        </div>
+
+        <!-- Timing & system -->
+        <div class="control-block">
+          <div class="control-label">
+            <span>Timing & System</span>
+            <span class="pill">T controls meta + disco dwell</span>
+          </div>
+
+          <div>
+            <div class="control-label">
+              <span>Pattern Duration (T)</span>
+              <span class="control-value"><span id="TVal">12</span> s</span>
+            </div>
+            <div class="slider-row">
+              <input id="TSlider" type="range" min="1" max="120" value="12" />
+              <span class="badge">1s ⟷ 120s</span>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="control-label">
+              <span>Power</span>
+            </div>
+            <div class="row">
+              <button id="onBtn" class="btn-secondary btn-small">ON</button>
+              <button id="offBtn" class="btn-secondary btn-small">OFF</button>
+              <button id="factoryBtn" class="btn-danger btn-small">Factory Reset</button>
+            </div>
+            <div style="margin-top:4px; font-size:0.72rem; color:var(--text-muted);">
+              Physical button combos still work (clicks & holds).
+            </div>
+          </div>
+        </div>
+
+        <!-- Battery & misc -->
+        <div class="control-block">
+          <div class="control-label">
+            <span>Battery & Telemetry</span>
+            <span class="pill">Live from device</span>
+          </div>
+
+          <div class="metrics-row">
+            <div class="metric">
+              🔋 <span><strong id="batPercent">--%</strong> • <span id="batVoltage">--.- V</span></span>
+            </div>
+            <div class="battery-bar">
+              <div id="batFill" class="battery-bar-fill"></div>
+            </div>
+          </div>
+
+          <div class="metrics-row">
+            <div class="metric">
+              🎛️ <span>IMU Mag: <strong id="imuMag">--</strong> g</span>
+            </div>
+            <div class="metric">
+              🎙 <span>Mic Level: <strong id="micLevel">--</strong></span>
+            </div>
+          </div>
+
+          <div style="margin-top:8px; font-size:0.72rem; color:var(--text-muted);">
+            IMU & mic graphs refresh ~50 Hz to match device telemetry.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Graphs -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Sensor Telemetry</h2>
+          <div style="font-size:0.75rem; color:var(--text-muted);">
+            IMU axes and microphone levels in real-time.
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div>
+          <div class="control-label">
+            <span>IMU (Accel)</span>
+            <span class="control-value">X / Y / Z (g)</span>
+          </div>
+          <canvas id="imuChart" height="150"></canvas>
+        </div>
+
+        <div>
+          <div class="control-label">
+            <span>Microphone Level</span>
+            <span class="control-value">Normalized (0–1)</span>
+          </div>
+          <canvas id="micChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const NUS_SERVICE_UUID       = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_RX_CHAR_UUID       = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_TX_CHAR_UUID       = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
+    let bleDevice = null;
+    let bleServer = null;
+    let nusService = null;
+    let rxChar = null;
+    let txChar = null;
+    let connected = false;
+
+    const connDot       = document.getElementById("connDot");
+    const connText      = document.getElementById("connText");
+    const connectBtn    = document.getElementById("connectBtn");
+    const playBtn       = document.getElementById("playBtn");
+    const discoBtn      = document.getElementById("discoBtn");
+    const nextBtn       = document.getElementById("nextBtn");
+    const favBtn        = document.getElementById("favBtn");
+    const patternSlider = document.getElementById("patternSlider");
+    const patternIdxVal = document.getElementById("patternIdxVal");
+    const listLabel     = document.getElementById("listLabel");
+    const brightnessSlider = document.getElementById("brightnessSlider");
+    const BVal          = document.getElementById("BVal");
+    const sleepToggle   = document.getElementById("sleepToggle");
+    const TSlider       = document.getElementById("TSlider");
+    const TVal          = document.getElementById("TVal");
+    const onBtn         = document.getElementById("onBtn");
+    const offBtn        = document.getElementById("offBtn");
+    const factoryBtn    = document.getElementById("factoryBtn");
+    const listRow       = document.getElementById("listRow");
+    const patternChip   = document.getElementById("patternChip");
+    const patternLabel  = document.getElementById("patternLabel");
+    const batPercentEl  = document.getElementById("batPercent");
+    const batVoltageEl  = document.getElementById("batVoltage");
+    const batFill       = document.getElementById("batFill");
+    const imuMagEl      = document.getElementById("imuMag");
+    const micLevelEl    = document.getElementById("micLevel");
+
+    const listColors = [
+      { name: "White",  color: "#ffffff" },
+      { name: "Red",    color: "#ff4b4b" },
+      { name: "Orange", color: "#ffa733" },
+      { name: "Yellow", color: "#ffe94f" },
+      { name: "Green",  color: "#51ff88" },
+      { name: "Blue",   color: "#4fbfff" },
+      { name: "Indigo", color: "#5c5cff" },
+      { name: "Violet", color: "#d277ff" }
+    ];
+    let currentListIdx = 0;
+
+    async function sendCommand(cmd) {
+      if (!connected || !txChar) return;
+      const data = new TextEncoder().encode(cmd + "\n");
+      try {
+        await txChar.writeValue(data);
+      } catch (e) {
+        console.error("write error", e);
+      }
+    }
+
+    function setConnectedState(isConnected) {
+      connected = isConnected;
+      if (isConnected) {
+        connDot.classList.add("connected");
+        connText.textContent = "Connected";
+        connectBtn.textContent = "Disconnect";
+      } else {
+        connDot.classList.remove("connected");
+        connText.textContent = "Disconnected";
+        connectBtn.textContent = "Connect";
+      }
+    }
+
+    function updatePatternDisplay(listIdx, patternIdx) {
+      const info = listColors[listIdx] || listColors[0];
+      patternChip.style.background = info.color;
+      patternChip.textContent = patternIdx;
+      const meta = patternIdx === 0 ? "Meta" : patternIdx;
+      patternLabel.textContent =
+        `List: ${info.name} (${listIdx}) • Pattern: ${meta}`;
+    }
+
+    function updateListLabel() {
+      const info = listColors[currentListIdx] || listColors[0];
+      listLabel.textContent = `${info.name} (${currentListIdx})`;
+      updatePatternDisplay(currentListIdx, parseInt(patternSlider.value, 10));
+    }
+
+    function buildListCircles() {
+      listRow.innerHTML = "";
+      listColors.forEach((info, idx) => {
+        const div = document.createElement("div");
+        div.className = "list-circle";
+        div.style.background = info.color;
+        if (idx === currentListIdx) div.classList.add("active");
+        const span = document.createElement("span");
+        span.textContent = info.name[0];
+        div.appendChild(span);
+        div.addEventListener("click", () => {
+          currentListIdx = idx;
+          document.querySelectorAll(".list-circle").forEach(c => c.classList.remove("active"));
+          div.classList.add("active");
+          updateListLabel();
+          sendCommand("L" + idx);
+        });
+        listRow.appendChild(div);
+      });
+    }
+
+    buildListCircles();
+    updateListLabel();
+
+    patternSlider.addEventListener("input", () => {
+      const val = parseInt(patternSlider.value, 10);
+      patternIdxVal.textContent = val;
+      updatePatternDisplay(currentListIdx, val);
+    });
+    patternSlider.addEventListener("change", () => {
+      const val = parseInt(patternSlider.value, 10);
+      sendCommand("I" + val);
+    });
+
+    brightnessSlider.addEventListener("input", () => {
+      const val = parseInt(brightnessSlider.value, 10);
+      BVal.textContent = val;
+    });
+    brightnessSlider.addEventListener("change", () => {
+      sendCommand("B" + brightnessSlider.value);
+    });
+
+    TSlider.addEventListener("input", () => {
+      TVal.textContent = TSlider.value;
+    });
+    TSlider.addEventListener("change", () => {
+      sendCommand("T" + TSlider.value);
+    });
+
+    sleepToggle.addEventListener("click", () => {
+      const on = !sleepToggle.classList.contains("on");
+      sleepToggle.classList.toggle("on", on);
+      sendCommand(on ? "S1" : "S0");
+    });
+
+    playBtn.addEventListener("click", () => {
+      sendCommand("D0");
+      sendCommand("ON");
+    });
+
+    discoBtn.addEventListener("click", () => {
+      sendCommand("D1");
+    });
+
+    nextBtn.addEventListener("click", () => {
+      sendCommand("N");
+    });
+
+    favBtn.addEventListener("click", () => {
+      sendCommand("F");
+    });
+
+    onBtn.addEventListener("click", () => sendCommand("ON"));
+    offBtn.addEventListener("click", () => sendCommand("OFF"));
+
+    factoryBtn.addEventListener("click", () => {
+      alert("To factory reset: hold the physical button for 10 seconds.");
+    });
+
+    async function connect() {
+      try {
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: "FiddleStIXV1" }],
+          optionalServices: [NUS_SERVICE_UUID]
+        });
+        bleDevice.addEventListener("gattserverdisconnected", onDisconnected);
+        bleServer = await bleDevice.gatt.connect();
+        nusService = await bleServer.getPrimaryService(NUS_SERVICE_UUID);
+        rxChar = await nusService.getCharacteristic(NUS_RX_CHAR_UUID);
+        txChar = await nusService.getCharacteristic(NUS_TX_CHAR_UUID);
+
+        await rxChar.startNotifications();
+        rxChar.addEventListener("characteristicvaluechanged", onRx);
+
+        setConnectedState(true);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function disconnect() {
+      if (!bleDevice) return;
+      try {
+        if (bleDevice.gatt.connected) {
+          await bleDevice.gatt.disconnect();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      setConnectedState(false);
+    }
+
+    function onDisconnected() {
+      setConnectedState(false);
+    }
+
+    connectBtn.addEventListener("click", () => {
+      if (!connected) connect();
+      else disconnect();
+    });
+
+    const imuCtx = document.getElementById("imuChart").getContext("2d");
+    const micCtx = document.getElementById("micChart").getContext("2d");
+
+    const maxPoints = 120;
+
+    const imuData = {
+      labels: [],
+      datasets: [
+        { label: "X", data: [], borderWidth: 2, fill: false },
+        { label: "Y", data: [], borderWidth: 2, fill: false },
+        { label: "Z", data: [], borderWidth: 2, fill: false }
+      ]
+    };
+
+    const micData = {
+      labels: [],
+      datasets: [
+        { label: "Level", data: [], borderWidth: 2, fill: true }
+      ]
+    };
+
+    const imuChart = new Chart(imuCtx, {
+      type: "line",
+      data: imuData,
+      options: {
+        animation: false,
+        responsive: true,
+        scales: {
+          x: { display: false },
+          y: { suggestedMin: -2, suggestedMax: 2 }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#c3c7ff",
+              font: { size: 10 }
+            }
+          }
+        }
+      }
+    });
+
+    const micChart = new Chart(micCtx, {
+      type: "line",
+      data: micData,
+      options: {
+        animation: false,
+        responsive: true,
+        scales: {
+          x: { display: false },
+          y: { suggestedMin: 0, suggestedMax: 1 }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#c3c7ff",
+              font: { size: 10 }
+            }
+          }
+        }
+      }
+    });
+
+    function pushData(arr, val) {
+      arr.push(val);
+      if (arr.length > maxPoints) arr.shift();
+    }
+
+    // Buffered RX for fragmented lines
+    let rxBuffer = "";
+
+    function onRx(event) {
+      const chunk = new TextDecoder().decode(event.target.value);
+      rxBuffer += chunk;
+
+      const lines = rxBuffer.split(/\r?\n/);
+      rxBuffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        handleTelemetryLine(trimmed);
+      }
+    }
+
+    function handleTelemetryLine(line) {
+      const parts = line.split(",");
+      const tag = parts[0];
+
+      if (tag === "IMU" && parts.length >= 5) {
+        const ax = parseFloat(parts[1]);
+        const ay = parseFloat(parts[2]);
+        const az = parseFloat(parts[3]);
+        const mag = parseFloat(parts[4]);
+        imuMagEl.textContent = mag.toFixed(2);
+
+        const label = "";
+        pushData(imuData.labels, label);
+        pushData(imuData.datasets[0].data, ax);
+        pushData(imuData.datasets[1].data, ay);
+        pushData(imuData.datasets[2].data, az);
+        if (imuData.labels.length > maxPoints) {
+          imuData.labels.shift();
+        }
+        imuChart.update("none");
+      } else if (tag === "MIC" && parts.length >= 2) {
+        const lvl = parseFloat(parts[1]);
+        micLevelEl.textContent = lvl.toFixed(2);
+        const label = "";
+        pushData(micData.labels, label);
+        pushData(micData.datasets[0].data, lvl);
+        if (micData.labels.length > maxPoints) micData.labels.shift();
+        micChart.update("none");
+      } else if (tag === "BAT" && parts.length >= 3) {
+        const pct = parseInt(parts[1], 10);
+        const volt = parseFloat(parts[2]);
+        batPercentEl.textContent = (isNaN(pct) ? "--%" : pct + "%");
+        batVoltageEl.textContent = isNaN(volt) ? "--.- V" : volt.toFixed(2) + " V";
+        if (!isNaN(pct)) {
+          batFill.style.width = Math.min(100, Math.max(0, pct)) + "%";
+        }
+      } else if (tag === "PAT" && parts.length >= 3) {
+        const listIdx = parseInt(parts[1], 10);
+        const pIdx = parseInt(parts[2], 10);
+        if (!isNaN(listIdx) && listIdx >= 0 && listIdx < listColors.length) {
+          currentListIdx = listIdx;
+          patternSlider.value = pIdx;
+          patternIdxVal.textContent = pIdx;
+          document.querySelectorAll(".list-circle").forEach((c, i) => {
+            c.classList.toggle("active", i === listIdx);
+          });
+          updateListLabel();
+          updatePatternDisplay(listIdx, pIdx);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+
 
 
