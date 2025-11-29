@@ -5,7 +5,6 @@
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Chart.js for graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -319,6 +318,11 @@
       text-shadow: 0 0 4px rgba(255,255,255,0.7);
     }
 
+    .list-circle.blacklist span {
+      color: #f5f5ff;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9);
+    }
+
     .list-circle.active {
       transform: translateY(-2px) scale(1.02);
       box-shadow: 0 0 0 4px rgba(255,255,255,0.25);
@@ -345,6 +349,11 @@
       font-weight: 700;
       color: #111;
       text-shadow: 0 0 4px rgba(255,255,255,0.7);
+    }
+
+    .pattern-chip.black {
+      color: #f5f5ff;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9);
     }
 
     .pattern-text {
@@ -408,7 +417,6 @@
       flex-wrap: wrap;
       margin-top: 6px;
     }
-
   </style>
 </head>
 <body>
@@ -449,7 +457,7 @@
             </div>
             <div class="pattern-text">
               <div><strong id="patternLabel">List: White • Pattern: 0 (Meta)</strong></div>
-              <div style="font-size:0.72rem;">Circular cell shows list color & pattern number.</div>
+              <div style="font-size:0.72rem;">This shows the pattern actually playing on the device.</div>
             </div>
           </div>
 
@@ -468,16 +476,14 @@
         <div class="control-block">
           <div class="control-label">
             <span>List & Brightness</span>
-            <span class="pill">Lists: W R O Y G B I V</span>
+            <span class="pill">White + W R O Y G B I V + Blacklist</span>
           </div>
 
           <div class="control-label" style="margin-top:4px;">
             <span>List</span>
             <span class="control-value" id="listLabel">White (0)</span>
           </div>
-          <div class="list-row" id="listRow">
-            <!-- circles added by JS -->
-          </div>
+          <div class="list-row" id="listRow"></div>
 
           <div style="margin-top:8px;">
             <div class="control-label">
@@ -485,7 +491,7 @@
               <span class="control-value">B=<span id="BVal">4</span>/7</span>
             </div>
             <div class="slider-row">
-              <input id="brightnessSlider" type="range" min="1" max="7" step="1" value="4" />
+              <input id="brightnessSlider" type="range" min="0" max="7" step="1" value="4" />
               <span class="badge">Low ⟷ High</span>
             </div>
           </div>
@@ -502,7 +508,7 @@
         <div class="control-block">
           <div class="control-label">
             <span>Timing & System</span>
-            <span class="pill">T controls meta + disco dwell</span>
+            <span class="pill">T drives meta & disco</span>
           </div>
 
           <div>
@@ -526,12 +532,12 @@
               <button id="factoryBtn" class="btn-danger btn-small">Factory Reset</button>
             </div>
             <div style="margin-top:4px; font-size:0.72rem; color:var(--text-muted);">
-              Physical button combos still work (clicks & holds).
+              Physical button combos on the stick still work (click sequences & holds).
             </div>
           </div>
         </div>
 
-        <!-- Battery & misc -->
+        <!-- Battery & telemetry -->
         <div class="control-block">
           <div class="control-label">
             <span>Battery & Telemetry</span>
@@ -557,7 +563,7 @@
           </div>
 
           <div style="margin-top:8px; font-size:0.72rem; color:var(--text-muted);">
-            IMU & mic graphs refresh ~50 Hz to match device telemetry.
+            IMU & Mic graphs refresh ~50 Hz. Use them to tune your data-reactive patterns.
           </div>
         </div>
       </div>
@@ -595,9 +601,9 @@
   </div>
 
   <script>
-    const NUS_SERVICE_UUID       = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const NUS_RX_CHAR_UUID       = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-    const NUS_TX_CHAR_UUID       = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_RX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_TX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
     let bleDevice = null;
     let bleServer = null;
@@ -634,14 +640,15 @@
     const micLevelEl    = document.getElementById("micLevel");
 
     const listColors = [
-      { name: "White",  color: "#ffffff" },
-      { name: "Red",    color: "#ff4b4b" },
-      { name: "Orange", color: "#ffa733" },
-      { name: "Yellow", color: "#ffe94f" },
-      { name: "Green",  color: "#51ff88" },
-      { name: "Blue",   color: "#4fbfff" },
-      { name: "Indigo", color: "#5c5cff" },
-      { name: "Violet", color: "#d277ff" }
+      { name: "White",     color: "#ffffff",  label: "W" },
+      { name: "Red",       color: "#ff4b4b",  label: "R" },
+      { name: "Orange",    color: "#ffa733",  label: "O" },
+      { name: "Yellow",    color: "#ffe94f",  label: "Y" },
+      { name: "Green",     color: "#51ff88",  label: "G" },
+      { name: "Blue",      color: "#4fbfff",  label: "B" },
+      { name: "Indigo",    color: "#5c5cff",  label: "I" },
+      { name: "Violet",    color: "#d277ff",  label: "V" },
+      { name: "Blacklist", color: "#05050a",  label: "9" }
     ];
     let currentListIdx = 0;
 
@@ -671,6 +678,7 @@
     function updatePatternDisplay(listIdx, patternIdx) {
       const info = listColors[listIdx] || listColors[0];
       patternChip.style.background = info.color;
+      patternChip.classList.toggle("black", listIdx === 8);
       patternChip.textContent = patternIdx;
       const meta = patternIdx === 0 ? "Meta" : patternIdx;
       patternLabel.textContent =
@@ -688,10 +696,11 @@
       listColors.forEach((info, idx) => {
         const div = document.createElement("div");
         div.className = "list-circle";
+        if (idx === 8) div.classList.add("blacklist");
         div.style.background = info.color;
         if (idx === currentListIdx) div.classList.add("active");
         const span = document.createElement("span");
-        span.textContent = info.name[0];
+        span.textContent = info.label;
         div.appendChild(span);
         div.addEventListener("click", () => {
           currentListIdx = idx;
@@ -759,7 +768,7 @@
     offBtn.addEventListener("click", () => sendCommand("OFF"));
 
     factoryBtn.addEventListener("click", () => {
-      alert("To factory reset: hold the physical button for 10 seconds.");
+      alert("To factory reset the device, hold the physical button for 10 seconds.");
     });
 
     async function connect() {
@@ -872,21 +881,12 @@
       if (arr.length > maxPoints) arr.shift();
     }
 
-    // Buffered RX for fragmented lines
-    let rxBuffer = "";
-
     function onRx(event) {
-      const chunk = new TextDecoder().decode(event.target.value);
-      rxBuffer += chunk;
-
-      const lines = rxBuffer.split(/\r?\n/);
-      rxBuffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        handleTelemetryLine(trimmed);
-      }
+      const value = new TextDecoder().decode(event.target.value);
+      value.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        handleTelemetryLine(line.trim());
+      });
     }
 
     function handleTelemetryLine(line) {
@@ -898,29 +898,27 @@
         const ay = parseFloat(parts[2]);
         const az = parseFloat(parts[3]);
         const mag = parseFloat(parts[4]);
-        imuMagEl.textContent = mag.toFixed(2);
+        if (!isNaN(mag)) imuMagEl.textContent = mag.toFixed(2);
 
         const label = "";
         pushData(imuData.labels, label);
-        pushData(imuData.datasets[0].data, ax);
-        pushData(imuData.datasets[1].data, ay);
-        pushData(imuData.datasets[2].data, az);
-        if (imuData.labels.length > maxPoints) {
-          imuData.labels.shift();
-        }
+        pushData(imuData.datasets[0].data, isNaN(ax) ? 0 : ax);
+        pushData(imuData.datasets[1].data, isNaN(ay) ? 0 : ay);
+        pushData(imuData.datasets[2].data, isNaN(az) ? 0 : az);
+        if (imuData.labels.length > maxPoints) imuData.labels.shift();
         imuChart.update("none");
       } else if (tag === "MIC" && parts.length >= 2) {
         const lvl = parseFloat(parts[1]);
-        micLevelEl.textContent = lvl.toFixed(2);
+        if (!isNaN(lvl)) micLevelEl.textContent = lvl.toFixed(2);
         const label = "";
         pushData(micData.labels, label);
-        pushData(micData.datasets[0].data, lvl);
+        pushData(micData.datasets[0].data, isNaN(lvl) ? 0 : lvl);
         if (micData.labels.length > maxPoints) micData.labels.shift();
         micChart.update("none");
       } else if (tag === "BAT" && parts.length >= 3) {
         const pct = parseInt(parts[1], 10);
         const volt = parseFloat(parts[2]);
-        batPercentEl.textContent = (isNaN(pct) ? "--%" : pct + "%");
+        batPercentEl.textContent = isNaN(pct) ? "--%" : pct + "%";
         batVoltageEl.textContent = isNaN(volt) ? "--.- V" : volt.toFixed(2) + " V";
         if (!isNaN(pct)) {
           batFill.style.width = Math.min(100, Math.max(0, pct)) + "%";
@@ -943,6 +941,3 @@
   </script>
 </body>
 </html>
-
-
-
