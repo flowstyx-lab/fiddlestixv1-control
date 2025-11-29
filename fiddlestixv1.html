@@ -16,8 +16,9 @@
       margin-bottom: 0.25rem;
     }
     h2 {
-      font-size: 1.2rem;
-      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      margin-top: 1.3rem;
+      margin-bottom: 0.4rem;
     }
     .card {
       background: #121420;
@@ -51,9 +52,10 @@
       cursor: not-allowed;
     }
     #status {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: #a5b0ff;
       min-height: 1.2rem;
+      margin-bottom: 8px;
     }
     #log {
       font-family: monospace;
@@ -84,6 +86,24 @@
       margin-right: 4px;
       font-size: 0.85rem;
     }
+    .label {
+      font-size: 0.8rem;
+      color: #9ea6ff;
+      margin-right: 4px;
+    }
+    .value {
+      font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      margin-right: 8px;
+    }
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      background: #191b2a;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -108,7 +128,7 @@
       <button class="secondary" data-cmd="D0">DISCO OFF (D0)</button>
     </div>
     <div class="row">
-      <label>Brightness:</label>
+      <span class="label">Brightness:</span>
       <button class="secondary" data-cmd="B1">B1</button>
       <button class="secondary" data-cmd="B2">B2</button>
       <button class="secondary" data-cmd="B3">B3</button>
@@ -149,6 +169,27 @@
   </div>
 
   <div class="card">
+    <h2>Live Telemetry</h2>
+    <div class="row">
+      <span class="pill">IMU</span>
+      <span class="label">ax:</span><span class="value" id="imuAx">-</span>
+      <span class="label">ay:</span><span class="value" id="imuAy">-</span>
+      <span class="label">az:</span><span class="value" id="imuAz">-</span>
+      <span class="label">|a|:</span><span class="value" id="imuMag">-</span>
+    </div>
+    <div class="row">
+      <span class="pill">MIC</span>
+      <span class="label">level:</span><span class="value" id="micLevel">-</span>
+      <div style="flex-basis: 100%; height: 4px;"></div>
+    </div>
+    <div class="row">
+      <span class="pill">BAT</span>
+      <span class="label">charge:</span><span class="value" id="batPercent">-</span>
+      <span class="label">voltage:</span><span class="value" id="batVoltage">-</span>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Raw Command</h2>
     <div class="row">
       <input type="text" id="rawCmd" placeholder="Enter command, e.g. B4" />
@@ -162,9 +203,9 @@
   </div>
 
   <script>
-    const NUS_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_TX_CHAR_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from device
-    const NUS_RX_CHAR_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to device
+    const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from device
+    const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to device
 
     let bleDevice = null;
     let gattServer = null;
@@ -176,6 +217,16 @@
     const logEl = document.getElementById('log');
     const connectBtn = document.getElementById('connectBtn');
     const disconnectBtn = document.getElementById('disconnectBtn');
+
+    const imuAxEl = document.getElementById('imuAx');
+    const imuAyEl = document.getElementById('imuAy');
+    const imuAzEl = document.getElementById('imuAz');
+    const imuMagEl = document.getElementById('imuMag');
+    const micLevelEl = document.getElementById('micLevel');
+    const batPercentEl = document.getElementById('batPercent');
+    const batVoltageEl = document.getElementById('batVoltage');
+
+    let rxBuffer = '';
 
     function log(msg) {
       const time = new Date().toLocaleTimeString();
@@ -191,9 +242,7 @@
       try {
         setStatus('Requesting Bluetooth device...');
         bleDevice = await navigator.bluetooth.requestDevice({
-          filters: [
-            { name: 'FiddleStIXV1' }
-          ],
+          filters: [{ name: 'FiddleStIXV1' }],
           optionalServices: [NUS_SERVICE_UUID]
         });
 
@@ -238,14 +287,39 @@
       if (!bleDevice) return;
       setStatus('Disconnecting...');
       await bleDevice.gatt.disconnect();
-      // onDisconnected() will be called automatically
+      // onDisconnected() will run automatically
     }
 
     function onTxNotification(event) {
       const value = event.target.value;
       const decoder = new TextDecoder('utf-8');
-      const msg = decoder.decode(value);
-      log('RX: ' + msg.trim());
+      const chunk = decoder.decode(value);
+
+      rxBuffer += chunk;
+      let lines = rxBuffer.split('\n');
+      rxBuffer = lines.pop(); // save incomplete line
+
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        handleTelemetryLine(trimmed);
+      }
+    }
+
+    function handleTelemetryLine(line) {
+      log('RX: ' + line);
+      const parts = line.split(',');
+      if (parts[0] === 'IMU' && parts.length >= 5) {
+        imuAxEl.textContent = parseFloat(parts[1]).toFixed(3);
+        imuAyEl.textContent = parseFloat(parts[2]).toFixed(3);
+        imuAzEl.textContent = parseFloat(parts[3]).toFixed(3);
+        imuMagEl.textContent = parseFloat(parts[4]).toFixed(3);
+      } else if (parts[0] === 'MIC' && parts.length >= 2) {
+        micLevelEl.textContent = parseFloat(parts[1]).toFixed(3);
+      } else if (parts[0] === 'BAT' && parts.length >= 3) {
+        batPercentEl.textContent = parts[1] + '%';
+        batVoltageEl.textContent = parseFloat(parts[2]).toFixed(2) + ' V';
+      }
     }
 
     async function sendCommand(cmd) {
@@ -308,4 +382,5 @@
   </script>
 </body>
 </html>
+
 
