@@ -5,7 +5,6 @@
   <title>FiddleStix V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -539,7 +538,7 @@
       </div>
 
       <div class="footer-note">
-        Tip: Use a BLE terminal (nRF Connect) if you want to inspect raw UART traffic.
+        Tip: Pattern 0 in each list is the meta pattern that cycles automatically.
       </div>
     </div>
 
@@ -583,20 +582,18 @@
   </div>
 
   <script>
-    // Nordic UART UUIDs
     const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-    const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+    const NUS_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+    const NUS_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
     let device = null;
     let server = null;
     let service = null;
-    let rxChar = null; // write
-    let txChar = null; // notify
+    let rxChar = null;
+    let txChar = null;
 
     let rxBuffer = '';
 
-    // DOM elements
     const connectButton     = document.getElementById('connectButton');
     const connectLabel      = document.getElementById('connectLabel');
     const deviceNameLabel   = document.getElementById('deviceNameLabel');
@@ -622,15 +619,15 @@
     const micLevelEl        = document.getElementById('micLevel');
     const imuMagEl          = document.getElementById('imuMag');
 
-    // IMU chart data
-    const imuHistoryLen = 200;
+    // IMU chart data – 30 seconds at ~50 Hz -> 1500 samples
+    const imuHistoryLen = 1500;
     let imuTime = [];
     let imuX = [];
     let imuY = [];
     let imuZ = [];
 
-    // Mic chart data
-    const micHistoryLen = 200;
+    // Mic chart data – same 30s window
+    const micHistoryLen = 1500;
     let micTime = [];
     let micVals = [];
 
@@ -645,24 +642,9 @@
         data: {
           labels: imuTime,
           datasets: [
-            {
-              label: 'ax (g)',
-              data: imuX,
-              borderWidth: 1,
-              fill: false,
-            },
-            {
-              label: 'ay (g)',
-              data: imuY,
-              borderWidth: 1,
-              fill: false,
-            },
-            {
-              label: 'az (g)',
-              data: imuZ,
-              borderWidth: 1,
-              fill: false,
-            },
+            { label: 'ax (g)', data: imuX, borderWidth: 1, fill: false },
+            { label: 'ay (g)', data: imuY, borderWidth: 1, fill: false },
+            { label: 'az (g)', data: imuZ, borderWidth: 1, fill: false },
           ]
         },
         options: {
@@ -670,15 +652,11 @@
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            x: {
-              display: false
-            },
+            x: { display: false },
             y: {
               suggestedMin: -2,
               suggestedMax: 2,
-              grid: {
-                color: 'rgba(255,255,255,0.07)'
-              },
+              grid: { color: 'rgba(255,255,255,0.07)' },
               ticks: {
                 color: '#cfd3ff',
                 font: { size: 10 }
@@ -715,15 +693,11 @@
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            x: {
-              display: false
-            },
+            x: { display: false },
             y: {
               suggestedMin: 0,
               suggestedMax: 1,
-              grid: {
-                color: 'rgba(255,255,255,0.07)'
-              },
+              grid: { color: 'rgba(255,255,255,0.07)' },
               ticks: {
                 color: '#cfd3ff',
                 font: { size: 10 }
@@ -826,9 +800,19 @@
     }
 
     let tCounter = 0;
+    let sleepOn = false;
+
+    function selectListCircle(idx) {
+      listCircles.forEach(c => {
+        if (parseInt(c.dataset.list, 10) === idx) {
+          c.classList.add('selected');
+        } else {
+          c.classList.remove('selected');
+        }
+      });
+    }
 
     function handleTelemetryLine(line) {
-      // console.log('RX:', line);
       const parts = line.split(',');
       if (parts.length < 2) return;
 
@@ -839,7 +823,7 @@
         const ay = parseFloat(parts[2]);
         const az = parseFloat(parts[3]);
         const mag = parseFloat(parts[4]);
-        imuMagEl.textContent = mag.toFixed(3);
+        imuMagEl.textContent = isFinite(mag) ? mag.toFixed(3) : '--';
 
         imuTime.push(tCounter++);
         imuX.push(ax);
@@ -856,7 +840,7 @@
         imuChart.update('none');
       } else if (topic === 'MIC' && parts.length >= 2) {
         const level = parseFloat(parts[1]);
-        micLevelEl.textContent = level.toFixed(3);
+        micLevelEl.textContent = isFinite(level) ? level.toFixed(3) : '--';
 
         micTime.push(tCounter);
         micVals.push(level);
@@ -871,12 +855,45 @@
 
         batteryPercentEl.textContent = isFinite(pct) ? pct + '%' : '--%';
         batteryVoltageEl.textContent = isFinite(v) ? v.toFixed(3) + ' V' : '-- V';
+      } else if (topic === 'PAT' && parts.length >= 7) {
+        const listIdx   = parseInt(parts[1], 10);
+        const patIdx    = parseInt(parts[2], 10);
+        const effIdx    = parseInt(parts[3], 10);
+        const mode      = parseInt(parts[4], 10);
+        const B         = parseInt(parts[5], 10);
+        const Tsec      = parseInt(parts[6], 10);
+
+        if (isFinite(listIdx)) {
+          selectListCircle(listIdx);
+        }
+
+        if (isFinite(effIdx)) {
+          patternSlider.value = effIdx;
+          patternValue.textContent = effIdx;
+        }
+
+        if (isFinite(B)) {
+          brightnessSlider.value = B;
+          brightnessValue.textContent = B;
+        }
+
+        if (isFinite(Tsec)) {
+          tSlider.value = Tsec;
+          tValue.textContent = Tsec + ' s';
+        }
+
+        if (mode === 5) { // MODE_SLEEP
+          sleepOn = true;
+          sleepToggle.classList.add('on');
+        } else {
+          sleepOn = false;
+          sleepToggle.classList.remove('on');
+        }
       }
     }
 
-    // UI interactions
     connectButton.addEventListener('click', () => {
-      if (device && device.gatt.connected) {
+      if (device && device.gatt && device.gatt.connected) {
         disconnect();
       } else {
         connect();
@@ -886,31 +903,31 @@
     listCircles.forEach(circle => {
       circle.addEventListener('click', () => {
         const listIdx = parseInt(circle.dataset.list, 10);
-        listCircles.forEach(c => c.classList.remove('selected'));
-        circle.classList.add('selected');
+        selectListCircle(listIdx);
         sendCommand('L' + listIdx);
       });
     });
 
-    // Pre-select White list circle
     document.querySelector('.list-circle[data-list="0"]').classList.add('selected');
 
     patternSlider.addEventListener('input', () => {
-      patternValue.textContent = patternSlider.value;
-      sendCommand('I' + patternSlider.value);
+      const val = parseInt(patternSlider.value, 10);
+      patternValue.textContent = val;
+      sendCommand('I' + val);
     });
 
     brightnessSlider.addEventListener('input', () => {
-      brightnessValue.textContent = brightnessSlider.value;
-      sendCommand('B' + brightnessSlider.value);
+      const val = parseInt(brightnessSlider.value, 10);
+      brightnessValue.textContent = val;
+      sendCommand('B' + val);
     });
 
     tSlider.addEventListener('input', () => {
-      tValue.textContent = tSlider.value + ' s';
-      sendCommand('T' + tSlider.value);
+      const val = parseInt(tSlider.value, 10);
+      tValue.textContent = val + ' s';
+      sendCommand('T' + val);
     });
 
-    let sleepOn = false;
     sleepToggle.addEventListener('click', () => {
       sleepOn = !sleepOn;
       sleepToggle.classList.toggle('on', sleepOn);
@@ -933,8 +950,14 @@
       sendCommand('OFF');
     });
 
+    // Next pattern in current list: just move slider and send I#
     nextButton.addEventListener('click', () => {
-      sendCommand('N');
+      let val = parseInt(patternSlider.value, 10);
+      if (!isFinite(val)) val = 0;
+      val = (val + 1) % 101; // 0..100 (0 is meta)
+      patternSlider.value = val;
+      patternValue.textContent = val;
+      sendCommand('I' + val);
     });
   </script>
 </body>
