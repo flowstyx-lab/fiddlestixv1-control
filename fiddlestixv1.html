@@ -1,308 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>FiddleStix V1 Control</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>FiddleStix V1 Control GUI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      background: #0b0b0f;
-      color: #f5f5f5;
+      background: #050510;
+      color: #f0f0ff;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
     header {
-      text-align: center;
-      padding: 1rem 1rem 0.5rem;
+      padding: 1rem 1.5rem;
+      background: radial-gradient(circle at top, #7020ff, #050510);
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
     }
-    h1 {
-      margin: 0.2rem 0;
-      font-size: 1.6rem;
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
     }
-    .subtitle {
-      opacity: 0.7;
+    header p {
+      margin: 0.3rem 0 0;
       font-size: 0.9rem;
+      opacity: 0.8;
     }
-    .toolbar, .status {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-    }
-    button {
-      background: #272740;
-      border: 1px solid #555;
-      border-radius: 999px;
-      color: white;
-      padding: 0.5rem 1rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-      min-width: 120px;
-      transition: background 0.2s, transform 0.1s;
-    }
-    button:hover {
-      background: #3a3a70;
-    }
-    button:active {
-      transform: scale(0.96);
-    }
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .status span {
-      font-size: 0.85rem;
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      background: #161623;
-    }
-    .container {
-      padding: 0 1rem 1rem;
-    }
-    .charts {
+    main {
+      flex: 1;
+      padding: 1rem 1.5rem 2rem;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 0.5rem;
+      gap: 1.2rem;
     }
+    @media (min-width: 900px) {
+      main {
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      }
+    }
+
     .card {
-      background: #12121d;
-      border-radius: 12px;
-      padding: 0.75rem;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      background: rgba(10, 10, 25, 0.96);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 0 18px rgba(0,0,0,0.7);
+      border: 1px solid rgba(120, 120, 255, 0.35);
     }
     .card h2 {
       margin: 0 0 0.5rem;
-      font-size: 1rem;
+      font-size: 1.2rem;
+    }
+    .card p {
+      margin: 0.2rem 0 0.6rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    button {
+      border-radius: 999px;
+      border: 1px solid rgba(180, 180, 255, 0.7);
+      background: radial-gradient(circle at top, #5b3dff, #261080);
+      color: #f8f8ff;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: transform 0.07s ease, box-shadow 0.07s ease, background 0.2s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(115, 105, 255, 0.8);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff4f4f;
+    }
+    .status-dot.connected {
+      background: #35ff7a;
+      box-shadow: 0 0 10px rgba(53, 255, 122, 0.8);
+    }
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .status-text {
+      opacity: 0.8;
+    }
+    .state-line {
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
+      opacity: 0.7;
     }
     canvas {
-      width: 100% !important;
-      height: 200px !important;
+      width: 100%;
+      height: 160px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top, #101030, #050510);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.7);
+    }
+    .graph-label {
+      font-size: 0.9rem;
+      margin-bottom: 0.2rem;
+      opacity: 0.8;
+    }
+    footer {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.75rem;
+      opacity: 0.6;
+      text-align: right;
+    }
+    code {
+      font-family: "SF Mono", "Roboto Mono", Menlo, monospace;
+      font-size: 0.78rem;
+      background: rgba(255,255,255,0.06);
+      padding: 0.15rem 0.4rem;
+      border-radius: 999px;
     }
   </style>
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <header>
-    <h1>FiddleStix V1 Control</h1>
-    <div class="subtitle">Web Bluetooth control & live sensor graphs</div>
-  </header>
+<header>
+  <h1>FiddleStix V1 Control GUI</h1>
+  <p>Web Bluetooth controller & live graphs for your handheld LED flow toy.</p>
+</header>
 
-  <section class="toolbar">
-    <button id="connectBtn">Connect</button>
-    <button id="nextPatternBtn" disabled>Next Pattern (P++)</button>
-    <button id="nextListBtn" disabled>Next List (L++)</button>
-    <button id="discoOnBtn" disabled>Disco Mode On (D1)</button>
-    <button id="discoOffBtn" disabled>Disco Mode Off (D0)</button>
-    <button id="sleepToggleBtn" disabled>Sleep: OFF</button>
-  </section>
+<main>
+  <!-- Left: Controls -->
+  <section class="card">
+    <h2>Connection & Controls</h2>
+    <p>Use Chrome or Edge over HTTPS. Click Connect, select <code>FiddleStixV1</code>, then control patterns & modes.</p>
 
-  <section class="status">
-    <span id="connectionStatus">Disconnected</span>
-    <span id="lastCommand">Last command: none</span>
-  </section>
-
-  <div class="container">
-    <div class="charts">
-      <div class="card">
-        <h2>Gyroscope Magnitude</h2>
-        <canvas id="gyroChart"></canvas>
-      </div>
-      <div class="card">
-        <h2>Acceleration Magnitude</h2>
-        <canvas id="accelChart"></canvas>
-      </div>
-      <div class="card">
-        <h2>Mic Volume</h2>
-        <canvas id="micChart"></canvas>
-      </div>
+    <div class="btn-row">
+      <button id="connectBtn">🔵 Connect</button>
+      <button id="disconnectBtn" disabled>⏏ Disconnect</button>
     </div>
-  </div>
 
-  <script>
-    // UUIDs for Nordic UART Service (NUS)
-    const NUS_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_RX_CHAR_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // from central to peripheral
-    const NUS_TX_CHAR_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // from peripheral to central
+    <div class="status-line">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText" class="status-text">Not connected</span>
+    </div>
+    <div class="state-line" id="stateLine">State: L=?, P=?, B=?, T=?</div>
 
-    let device = null;
-    let server = null;
-    let nusService = null;
-    let rxChar = null; // write
-    let txChar = null; // notify
+    <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.08);" />
 
-    let isConnected = false;
-    let sleepEnabled = false;
+    <h3>Pattern Navigation</h3>
+    <div class="btn-row">
+      <button id="nextPatternBtn" disabled>➡️ Next Pattern (P++)</button>
+      <button id="nextListBtn" disabled>🌈 Next List (L++)</button>
+    </div>
 
-    const connectBtn      = document.getElementById('connectBtn');
-    const nextPatternBtn  = document.getElementById('nextPatternBtn');
-    const nextListBtn     = document.getElementById('nextListBtn');
-    const discoOnBtn      = document.getElementById('discoOnBtn');
-    const discoOffBtn     = document.getElementById('discoOffBtn');
-    const sleepToggleBtn  = document.getElementById('sleepToggleBtn');
+    <h3>Modes</h3>
+    <div class="btn-row">
+      <button id="discoOnBtn" disabled>🎉 Disco ON (D1)</button>
+      <button id="discoOffBtn" disabled>🛑 Disco OFF (D0)</button>
+      <button id="pairBtn" disabled>📡 Pairing Mode (PAIR)</button>
+    </div>
 
-    const connectionStatus = document.getElementById('connectionStatus');
-    const lastCommandSpan  = document.getElementById('lastCommand');
+    <h3>Sleep</h3>
+    <div class="btn-row">
+      <button id="sleepToggleBtn" disabled>💤 Toggle Sleep Enabled (S0/S1)</button>
+    </div>
+  </section>
 
-    function setConnectedUI(connected) {
-      isConnected = connected;
-      connectionStatus.textContent = connected ? 'Connected' : 'Disconnected';
-      connectBtn.textContent = connected ? 'Disconnect' : 'Connect';
-      [nextPatternBtn, nextListBtn, discoOnBtn, discoOffBtn, sleepToggleBtn].forEach(btn => {
-        btn.disabled = !connected;
-      });
+  <!-- Right: Graphs -->
+  <section class="card">
+    <h2>Live Telemetry</h2>
+    <p>Shows data from the IMU & mic (stubbed in firmware but deterministic). Each line from device is: <code>IMU,ax,ay,az,gx,gy,gz,vol</code></p>
+
+    <div class="graph-block">
+      <div class="graph-label">Acceleration magnitude</div>
+      <canvas id="accelCanvas"></canvas>
+    </div>
+
+    <div class="graph-block" style="margin-top: 0.8rem;">
+      <div class="graph-label">Gyro magnitude</div>
+      <canvas id="gyroCanvas"></canvas>
+    </div>
+
+    <div class="graph-block" style="margin-top: 0.8rem;">
+      <div class="graph-label">Volume (mic proxy)</div>
+      <canvas id="volCanvas"></canvas>
+    </div>
+  </section>
+</main>
+
+<footer>
+  FiddleStix V1 • FlowStyx • Web Bluetooth prototype GUI
+</footer>
+
+<script>
+  // Nordic UART (NUS) service UUIDs used by Bluefruit BLEUart
+  const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from device
+  const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to device
+
+  let device = null;
+  let server = null;
+  let uartService = null;
+  let txChar = null;  // notifications from device
+  let rxChar = null;  // writes to device
+
+  const connectBtn      = document.getElementById('connectBtn');
+  const disconnectBtn   = document.getElementById('disconnectBtn');
+  const statusDot       = document.getElementById('statusDot');
+  const statusText      = document.getElementById('statusText');
+  const stateLine       = document.getElementById('stateLine');
+
+  const nextPatternBtn  = document.getElementById('nextPatternBtn');
+  const nextListBtn     = document.getElementById('nextListBtn');
+  const discoOnBtn      = document.getElementById('discoOnBtn');
+  const discoOffBtn     = document.getElementById('discoOffBtn');
+  const pairBtn         = document.getElementById('pairBtn');
+  const sleepToggleBtn  = document.getElementById('sleepToggleBtn');
+
+  // Graph buffers
+  const MAX_POINTS = 200;
+  let accelData = [];
+  let gyroData  = [];
+  let volData   = [];
+
+  const accelCanvas = document.getElementById('accelCanvas');
+  const gyroCanvas  = document.getElementById('gyroCanvas');
+  const volCanvas   = document.getElementById('volCanvas');
+
+  const accelCtx = accelCanvas.getContext('2d');
+  const gyroCtx  = gyroCanvas.getContext('2d');
+  const volCtx   = volCanvas.getContext('2d');
+
+  let sleepEnabled = true;
+
+  function setConnectedUI(connected) {
+    if (connected) {
+      statusDot.classList.add('connected');
+      statusText.textContent = 'Connected to FiddleStixV1';
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+      nextPatternBtn.disabled = false;
+      nextListBtn.disabled = false;
+      discoOnBtn.disabled = false;
+      discoOffBtn.disabled = false;
+      pairBtn.disabled = false;
+      sleepToggleBtn.disabled = false;
+    } else {
+      statusDot.classList.remove('connected');
+      statusText.textContent = 'Not connected';
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      nextPatternBtn.disabled = true;
+      nextListBtn.disabled = true;
+      discoOnBtn.disabled = true;
+      discoOffBtn.disabled = true;
+      pairBtn.disabled = true;
+      sleepToggleBtn.disabled = true;
     }
+  }
 
-    async function connect() {
-      try {
-        device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [NUS_SERVICE_UUID] }]
-        });
-        device.addEventListener('gattserverdisconnected', onDisconnected);
-        server = await device.gatt.connect();
-        nusService = await server.getPrimaryService(NUS_SERVICE_UUID);
-        rxChar = await nusService.getCharacteristic(NUS_RX_CHAR_UUID);
-        txChar = await nusService.getCharacteristic(NUS_TX_CHAR_UUID);
-        await txChar.startNotifications();
-        txChar.addEventListener('characteristicvaluechanged', handleNotifications);
-        setConnectedUI(true);
-      } catch (err) {
-        console.error(err);
-        alert('Failed to connect: ' + err);
-      }
-    }
-
-    async function disconnect() {
-      if (!device) return;
-      try {
-        await device.gatt.disconnect();
-      } catch (err) {
-        console.error(err);
-      }
-      setConnectedUI(false);
-    }
-
-    function onDisconnected() {
-      setConnectedUI(false);
-    }
-
-    async function sendCommand(cmd) {
-      if (!isConnected || !rxChar) return;
-      try {
-        const data = new TextEncoder().encode(cmd + '\n');
-        await rxChar.writeValue(data);
-        lastCommandSpan.textContent = 'Last command: ' + cmd;
-      } catch (err) {
-        console.error('Send failed', err);
-      }
-    }
-
-    // ----- Handle IMU/mic notifications from device -----
-    // Format: "IMU,ax,ay,az,gx,gy,gz,mic"
-    let gyroChart, accelChart, micChart;
-    let gyroData = [];
-    let accelData = [];
-    let micData = [];
-    const MAX_POINTS = 100;
-
-    function initCharts() {
-      const commonOptions = {
-        responsive: true,
-        animation: false,
-        scales: {
-          x: { display: false },
-          y: { display: true, ticks: { color: '#ccc' }, grid: { color: '#333' } }
-        },
-        plugins: {
-          legend: { display: false }
-        }
-      };
-
-      gyroChart = new Chart(document.getElementById('gyroChart').getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{ data: [], borderWidth: 1 }]
-        },
-        options: commonOptions
-      });
-
-      accelChart = new Chart(document.getElementById('accelChart').getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{ data: [], borderWidth: 1 }]
-        },
-        options: commonOptions
-      });
-
-      micChart = new Chart(document.getElementById('micChart').getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{ data: [], borderWidth: 1 }]
-        },
-        options: commonOptions
-      });
-    }
-
-    function addDataPoint(chart, arr, value) {
-      arr.push(value);
-      if (arr.length > MAX_POINTS) arr.shift();
-      chart.data.labels = arr.map((_, i) => i);
-      chart.data.datasets[0].data = arr;
-      chart.update('none');
-    }
-
-    function handleNotifications(event) {
-      const value = new TextDecoder().decode(event.target.value);
-      const lines = value.split(/\r?\n/);
-      for (const line of lines) {
-        if (!line.startsWith('IMU,')) continue;
-        const parts = line.split(',');
-        if (parts.length < 8) continue;
-        const ax = parseFloat(parts[1]);
-        const ay = parseFloat(parts[2]);
-        const az = parseFloat(parts[3]);
-        const gx = parseFloat(parts[4]);
-        const gy = parseFloat(parts[5]);
-        const gz = parseFloat(parts[6]);
-        const mic = parseInt(parts[7]);
-
-        const accelMag = Math.sqrt(ax*ax + ay*ay + az*az);
-        const gyroMag  = Math.sqrt(gx*gx + gy*gy + gz*gz);
-
-        addDataPoint(gyroChart, gyroData, gyroMag);
-        addDataPoint(accelChart, accelData, accelMag);
-        addDataPoint(micChart, micData, mic);
-      }
-    }
-
-    // ----- UI events -----
-    connectBtn.addEventListener('click', async () => {
-      if (isConnected) await disconnect();
-      else await connect();
-    });
-
-    nextPatternBtn.addEventListener('click', () => sendCommand('NP'));
-    nextListBtn.addEventListener('click', () => sendCommand('NL'));
-    discoOnBtn.addEventListener('click', () => sendCommand('D1'));
-    discoOffBtn.addEventListener('click', () => sendCommand('D0'));
-    sleepToggleBtn.addEventListener('click', () => {
-      sleepEnabled = !sleepEnabled;
-      sleepToggleBtn.textContent = 'Sleep: ' + (sleepEnabled ? 'ON' : 'OFF');
-      sendCommand(sleepEnabled ? 'S1' : 'S0');
-    });
-
-    window.addEventListener('load', () => {
+  async function connect() {
+    try {
       if (!navigator.bluetooth) {
-        alert('Web Bluetooth is not supported in this browser. Use Chrome/Edge on desktop or Android.');
+        alert('Web Bluetooth not supported in this browser. Use Chrome or Edge.');
+        return;
       }
-      initCharts();
+
+      device = await navigator.bluetooth.requestDevice({
+        filters: [
+          { namePrefix: 'FiddleStix' }
+        ],
+        optionalServices: [UART_SERVICE_UUID]
+      });
+
+      device.addEventListener('gattserverdisconnected', handleDisconnected);
+
+      statusText.textContent = 'Connecting...';
+      server = await device.gatt.connect();
+      uartService = await server.getPrimaryService(UART_SERVICE_UUID);
+
+      txChar = await uartService.getCharacteristic(UART_TX_UUID);
+      rxChar = await uartService.getCharacteristic(UART_RX_UUID);
+
+      await txChar.startNotifications();
+      txChar.addEventListener('characteristicvaluechanged', handleNotification);
+
+      setConnectedUI(true);
+      requestState();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to connect: ' + err);
+      setConnectedUI(false);
+    }
+  }
+
+  async function disconnect() {
+    try {
+      if (device && device.gatt.connected) {
+        await device.gatt.disconnect();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setConnectedUI(false);
+  }
+
+  function handleDisconnected() {
+    setConnectedUI(false);
+  }
+
+  function handleNotification(event) {
+    const value = event.target.value;
+    const text = new TextDecoder().decode(value);
+
+    // We might get fragments; split on newline and buffer
+    text.split(/\r?\n/).forEach(line => {
+      line = line.trim();
+      if (!line) return;
+
+      if (line.startsWith('IMU,')) {
+        const parts = line.split(',');
+        if (parts.length === 8) {
+          const ax = parseFloat(parts[1]) || 0;
+          const ay = parseFloat(parts[2]) || 0;
+          const az = parseFloat(parts[3]) || 0;
+          const gx = parseFloat(parts[4]) || 0;
+          const gy = parseFloat(parts[5]) || 0;
+          const gz = parseFloat(parts[6]) || 0;
+          const vol = parseFloat(parts[7]) || 0;
+
+          const amag = Math.sqrt(ax*ax + ay*ay + az*az);
+          const gmag = Math.sqrt(gx*gx + gy*gy + gz*gz);
+
+          accelData.push(amag);
+          gyroData.push(gmag);
+          volData.push(vol);
+
+          if (accelData.length > MAX_POINTS) accelData.shift();
+          if (gyroData.length > MAX_POINTS)  gyroData.shift();
+          if (volData.length > MAX_POINTS)   volData.shift();
+        }
+      } else if (line.startsWith('STATE,')) {
+        const parts = line.split(',');
+        if (parts.length === 5) {
+          const L  = parts[1];
+          const P  = parts[2];
+          const B  = parts[3];
+          const T  = parts[4];
+          stateLine.textContent = `State: L=${L}, P=${P}, B=${B}, T=${T} ms`;
+        }
+      } else {
+        // Other debug text; optional
+        console.log('BLE:', line);
+      }
     });
-  </script>
+  }
+
+  async function sendCommand(cmd) {
+    if (!rxChar) return;
+    try {
+      const data = new TextEncoder().encode(cmd + '\n');
+      await rxChar.writeValue(data);
+    } catch (err) {
+      console.error('Write error', err);
+    }
+  }
+
+  function requestState() {
+    sendCommand('P?');
+  }
+
+  // Button handlers
+  connectBtn.addEventListener('click', () => connect());
+  disconnectBtn.addEventListener('click', () => disconnect());
+
+  nextPatternBtn.addEventListener('click', () => sendCommand('NP'));
+  nextListBtn.addEventListener('click', () => sendCommand('NL'));
+
+  discoOnBtn.addEventListener('click', () => sendCommand('D1'));
+  discoOffBtn.addEventListener('click', () => sendCommand('D0'));
+  pairBtn.addEventListener('click', () => sendCommand('PAIR'));
+
+  sleepToggleBtn.addEventListener('click', () => {
+    sleepEnabled = !sleepEnabled;
+    sendCommand(sleepEnabled ? 'S1' : 'S0');
+    sleepToggleBtn.textContent = sleepEnabled
+      ? '💤 Toggle Sleep Enabled (S0/S1)'
+      : '🟢 Sleep Disabled (S0/S1)';
+  });
+
+  // ---- Simple graph drawing ----
+
+  function drawGraph(ctx, canvas, data, colorTop, colorLine, maxVal) {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Clear with gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#151535');
+    grad.addColorStop(1, '#050510');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    if (!data.length) return;
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = colorLine;
+    ctx.beginPath();
+
+    const n = data.length;
+    const dx = w / Math.max(n - 1, 1);
+    const maxv = maxVal || Math.max(...data, 0.001);
+    const scale = (h * 0.8) / maxv;
+
+    data.forEach((v, i) => {
+      const x = i * dx;
+      const y = h - v * scale - h * 0.1;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+  }
+
+  function resizeCanvases() {
+    [accelCanvas, gyroCanvas, volCanvas].forEach(canvas => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+    });
+  }
+
+  window.addEventListener('resize', resizeCanvases);
+  resizeCanvases();
+
+  function animate() {
+    drawGraph(accelCtx, accelCanvas, accelData, '#40ffbf', '#66ffe0', 2.0);
+    drawGraph(gyroCtx,  gyroCanvas,  gyroData,  '#40a0ff', '#66c0ff', 60.0);
+    drawGraph(volCtx,   volCanvas,   volData,   '#ff40bf', '#ff66d6', 1.0);
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+</script>
+
 </body>
 </html>
