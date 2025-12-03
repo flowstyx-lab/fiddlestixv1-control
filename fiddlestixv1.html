@@ -136,6 +136,31 @@
       font-size: 0.85rem;
       color: #aaa;
       margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .status-pill {
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: #333;
+      font-size: 0.8rem;
+    }
+    .status-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 2px solid #444;
+    }
+    .status-label-text {
+      font-size: 0.8rem;
+      color: #aaa;
     }
     @media (max-width: 900px) {
       main {
@@ -155,10 +180,13 @@
     <h2>Controls</h2>
 
     <div class="status-line">
-      Device state:
-      <span id="stateLabel">Unknown</span> ·
-      List: <span id="listLabel">-</span> ·
-      Pattern: <span id="patternLabel">-</span>
+      <span class="status-pill">
+        State: <span id="stateLabel">Unknown</span>
+      </span>
+      <span class="status-label-text">List:</span>
+      <span id="currentListCircle" class="status-circle">-</span>
+      <span class="status-label-text">Pattern:</span>
+      <span id="currentPatternCircle" class="status-circle">-</span>
     </div>
 
     <div class="controls-grid">
@@ -248,8 +276,6 @@
 
   const connectBtn = document.getElementById('connectBtn');
   const stateLabel = document.getElementById('stateLabel');
-  const listLabel = document.getElementById('listLabel');
-  const patternLabel = document.getElementById('patternLabel');
   const patternSlider = document.getElementById('patternSlider');
   const patternSliderVal = document.getElementById('patternSliderVal');
   const brightSlider = document.getElementById('brightSlider');
@@ -260,6 +286,8 @@
   const sleepTimerFlag = document.getElementById('sleepTimerFlag');
   const powerLockFlag = document.getElementById('powerLockFlag');
   const listCircles = document.getElementById('listCircles');
+  const currentListCircle = document.getElementById('currentListCircle');
+  const currentPatternCircle = document.getElementById('currentPatternCircle');
 
   // Graph data (approx 600 points ~30s at 20Hz)
   const MAX_POINTS = 600;
@@ -411,7 +439,7 @@
     }
   }
 
-  // list colors for UI
+  // list colors for UI (must match C++ order)
   const listColors = [
     '#ffffff', // WHITE
     '#ff0000', // RED
@@ -444,6 +472,18 @@
     Array.from(listCircles.children).forEach((child, i) => {
       child.classList.toggle('active', i === idx);
     });
+  }
+
+  function updateStatusCircles(listIndex, patternIndex) {
+    const color = listColors[listIndex] || '#000000';
+
+    currentListCircle.style.background = color;
+    currentListCircle.textContent = listIndex.toString();
+    currentListCircle.style.color = (color.toLowerCase() === '#000000') ? '#ffffff' : '#000000';
+
+    currentPatternCircle.style.background = color;
+    currentPatternCircle.textContent = patternIndex.toString();
+    currentPatternCircle.style.color = (color.toLowerCase() === '#000000') ? '#ffffff' : '#000000';
   }
 
   buildListCircles();
@@ -504,6 +544,7 @@
     const value = event.target.value;
     const decoder = new TextDecoder('utf-8');
     const text = decoder.decode(value);
+
     // Could be multiple lines in one notification:
     text.split('\n').forEach(line => {
       line = line.trim();
@@ -536,11 +577,10 @@
     pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
 
     stateLabel.textContent = stateNameFromId(state);
-    listLabel.textContent = list.toString();
-    patternLabel.textContent = pattern.toString();
     patternSlider.value = pattern;
     patternSliderVal.textContent = pattern.toString();
     highlightActiveList(list);
+    updateStatusCircles(list, pattern);
   }
 
   async function sendCommand(str) {
