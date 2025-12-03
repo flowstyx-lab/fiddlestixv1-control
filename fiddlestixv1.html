@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -17,631 +17,634 @@
       padding: 0;
     }
     header {
-      padding: 1rem;
+      padding: 12px 16px;
       background: #222;
+      border-bottom: 1px solid #333;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
     }
     header h1 {
-      margin: 0;
       font-size: 1.2rem;
+      margin: 0;
     }
-    header button {
-      padding: 0.5rem 1rem;
+    button {
+      background: #2b7cff;
       border: none;
-      border-radius: 999px;
-      background: #0af;
-      color: #000;
-      font-weight: 600;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 0.9rem;
+      margin: 2px;
     }
-    header button.connected {
-      background: #0f0;
-      color: #000;
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
     }
     main {
-      padding: 1rem;
+      padding: 12px 16px 32px 16px;
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 1rem;
-    }
-    section {
-      background: #181818;
-      border-radius: 12px;
-      padding: 1rem;
-      box-shadow: 0 0 0 1px #222;
-    }
-    h2 {
-      margin-top: 0;
-      font-size: 1rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #aaa;
-    }
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 0.5rem;
-    }
-    .controls-grid button {
-      padding: 0.5rem;
-      border-radius: 8px;
-      border: none;
-      background: #333;
-      color: #eee;
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
-    .controls-grid button:hover {
-      background: #444;
-    }
-    .row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 0.5rem;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    label {
-      font-size: 0.85rem;
-      color: #bbb;
-      min-width: 90px;
-    }
-    input[type="range"] {
-      flex: 1;
-    }
-    .value {
-      min-width: 2.5rem;
-      text-align: right;
-      font-size: 0.85rem;
-    }
-    .list-circles {
-      display: flex;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-    .list-circle {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-      box-shadow: 0 0 0 1px #333;
-    }
-    .list-circle.active {
-      border-color: #fff;
-      box-shadow: 0 0 0 2px #0af;
-    }
-    .bool-toggle {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-bottom: 0.3rem;
-      font-size: 0.85rem;
-    }
-    .graphs {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-    }
-    canvas {
-      background: #000;
-      border-radius: 8px;
-    }
-    .status-line {
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-    .status-pill {
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      background: #333;
-      font-size: 0.8rem;
-    }
-    .status-circle {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 0.8rem;
-      font-weight: 600;
-      border: 2px solid #444;
-    }
-    .status-label-text {
-      font-size: 0.8rem;
-      color: #aaa;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: 16px;
     }
     @media (max-width: 900px) {
       main {
         grid-template-columns: 1fr;
       }
     }
+    .card {
+      background: #181818;
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 1px solid #333;
+      margin-bottom: 12px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      margin: 0 0 8px 0;
+      color: #f5f5f5;
+    }
+    .status-line {
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #262626;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      margin: 2px 0;
+    }
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #888;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+    label {
+      font-size: 0.8rem;
+      display: block;
+      margin-bottom: 2px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .value-badge {
+      background: #2c2c2c;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+    }
+    canvas {
+      width: 100% !important;
+      height: 160px !important;
+    }
+
+    /* Current pattern badge */
+    .pattern-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-left: 8px;
+      border: 2px solid #444;
+    }
+
+    /* List colors */
+    .list-white { background: #ffffff; color: #000000; }
+    .list-red { background: #ff2b2b; color: #000000; }
+    .list-orange { background: #ff8c1a; color: #000000; }
+    .list-yellow { background: #ffd21a; color: #000000; }
+    .list-green { background: #2ecc71; color: #000000; }
+    .list-blue { background: #3498db; color: #000000; }
+    .list-indigo { background: #3b4cc0; color: #ffffff; }
+    .list-violet { background: #8e44ad; color: #ffffff; }
+    .list-black { background: #000000; color: #ffffff; }
+
   </style>
 </head>
 <body>
-<header>
-  <h1>FiddleStIX V1 Control</h1>
-  <button id="connectBtn">Connect</button>
-</header>
-
-<main>
-  <section id="controlSection">
-    <h2>Controls</h2>
-
-    <div class="status-line">
-      <span class="status-pill">
-        State: <span id="stateLabel">Unknown</span>
-      </span>
-      <span class="status-label-text">List:</span>
-      <span id="currentListCircle" class="status-circle">-</span>
-      <span class="status-label-text">Pattern:</span>
-      <span id="currentPatternCircle" class="status-circle">-</span>
-    </div>
-
-    <div class="controls-grid">
-      <button data-cmd="CMD:PREV_LIST">Previous Page</button>
-      <button data-cmd="CMD:NEXT_LIST">Next Page</button>
-      <button data-cmd="CMD:PREV_PATTERN">Previous Pattern</button>
-      <button data-cmd="CMD:NEXT_PATTERN">Next Pattern</button>
-      <button data-cmd="CMD:FAVORITE">Favorite</button>
-      <button data-cmd="CMD:GO_SLEEP">Go To Sleep</button>
-      <button data-cmd="CMD:RAVE">Rave O'Clock</button>
-    </div>
-
-    <hr style="border: none; border-top: 1px solid #333; margin: 1rem 0;">
-
-    <div class="row">
-      <label>Lists</label>
-      <div class="list-circles" id="listCircles">
-        <!-- Circles created via JS -->
-      </div>
-    </div>
-
-    <div class="row">
-      <label>Pattern #</label>
-      <input type="range" id="patternSlider" min="0" max="99" value="0">
-      <span class="value" id="patternSliderVal">0</span>
-    </div>
-
-    <div class="row">
-      <label>Brightness</label>
-      <input type="range" id="brightSlider" min="0" max="7" value="7">
-      <span class="value" id="brightSliderVal">7</span>
-    </div>
-
-    <div class="row">
-      <label>Shuffle T (ms)</label>
-      <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="5000">
-      <span class="value" id="shuffleSliderVal">5000</span>
-    </div>
-
+  <header>
+    <h1>FiddleStIX V1 Control</h1>
     <div>
-      <h2>Flags</h2>
-      <div class="bool-toggle">
-        <input type="checkbox" id="shuffleFlag">
-        <label for="shuffleFlag">Shuffle (shuffle_P)</label>
-      </div>
-      <div class="bool-toggle">
-        <input type="checkbox" id="sleepTimerFlag" checked>
-        <label for="sleepTimerFlag">Sleep Timer</label>
-      </div>
-      <div class="bool-toggle">
-        <input type="checkbox" id="powerLockFlag">
-        <label for="powerLockFlag">Power Lock</label>
-      </div>
+      <button id="connectBtn">Connect</button>
+      <span id="connectionStatus" class="status-line">Not connected</span>
     </div>
-  </section>
+  </header>
 
-  <section id="graphsSection">
-    <h2>Sensor Graphs (last ~30s)</h2>
-    <div class="graphs">
-      <div>
-        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
-        <canvas id="gyroCanvas" height="120"></canvas>
+  <main>
+    <section>
+      <div class="card">
+        <h2>Device Status</h2>
+        <div class="status-line">
+          <span id="deviceState">State: Unknown</span>
+        </div>
+        <div class="status-line">
+          <span id="listPatternText">List: - · Pattern: -</span>
+          <span id="currentPatternBadge" class="pattern-badge list-black">-</span>
+        </div>
+        <div class="status-line">
+          <span class="pill">
+            <span class="pill-dot" id="imuDot"></span>
+            IMU updating
+          </span>
+          <span class="pill">
+            <span class="pill-dot" id="micDot"></span>
+            Mic updating
+          </span>
+        </div>
       </div>
-      <div>
-        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Accel (ax, ay, az)</div>
-        <canvas id="accelCanvas" height="120"></canvas>
+
+      <div class="card">
+        <h2>Playback Controls</h2>
+        <div class="controls-grid">
+          <button id="prevListBtn">Previous Page</button>
+          <button id="nextListBtn">Next Page</button>
+          <button id="prevPatternBtn">Previous Pattern</button>
+          <button id="nextPatternBtn">Next Pattern</button>
+          <button id="favoriteBtn">Favorite</button>
+          <button id="sleepBtn">Go To Sleep</button>
+          <button id="raveBtn">Rave O’Clock</button>
+        </div>
       </div>
-      <div>
-        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Mic Level</div>
-        <canvas id="micCanvas" height="120"></canvas>
+
+      <div class="card">
+        <h2>Parameters</h2>
+        <div class="row">
+          <div style="flex: 1 1 150px;">
+            <label for="brightnessSlider">Global Brightness</label>
+            <input type="range" id="brightnessSlider" min="0" max="7" step="1" value="7">
+          </div>
+          <span class="value-badge" id="brightnessValue">7</span>
+        </div>
+        <div class="row">
+          <div style="flex: 1 1 150px;">
+            <label for="shuffleSlider">Shuffle Interval (ms)</label>
+            <input type="range" id="shuffleSlider" min="500" max="15000" step="500" value="5000">
+          </div>
+          <span class="value-badge" id="shuffleValue">5000 ms</span>
+        </div>
       </div>
-    </div>
-  </section>
-</main>
 
-<script>
-  // UART UUIDs (Nordic / Adafruit BLE UART)
-  const UART_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX_CHAR_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-  const UART_TX_CHAR_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+      <div class="card">
+        <h2>Pattern Selector</h2>
+        <div class="row">
+          <label for="listSelect">List</label>
+          <select id="listSelect">
+            <option value="0">White</option>
+            <option value="1">Red</option>
+            <option value="2">Orange</option>
+            <option value="3">Yellow</option>
+            <option value="4">Green</option>
+            <option value="5">Blue</option>
+            <option value="6">Indigo</option>
+            <option value="7">Violet</option>
+            <option value="8">Black</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="patternSlider">Pattern Index</label>
+          <input type="range" id="patternSlider" min="0" max="0" step="1" value="0">
+          <span class="value-badge" id="patternIndexLabel">0</span>
+        </div>
+        <button id="applyPatternBtn">Apply Selection</button>
+      </div>
+    </section>
 
-  let device = null;
-  let server = null;
-  let uartService = null;
-  let rxChar = null; // write
-  let txChar = null; // notify
+    <section>
+      <div class="card">
+        <h2>IMU – Acceleration (x,y,z)</h2>
+        <canvas id="accelChart"></canvas>
+      </div>
+      <div class="card">
+        <h2>IMU – Gyro (x,y,z)</h2>
+        <canvas id="gyroChart"></canvas>
+      </div>
+      <div class="card">
+        <h2>Microphone Level</h2>
+        <canvas id="micChart"></canvas>
+      </div>
+    </section>
+  </main>
 
-  const connectBtn = document.getElementById('connectBtn');
-  const stateLabel = document.getElementById('stateLabel');
-  const patternSlider = document.getElementById('patternSlider');
-  const patternSliderVal = document.getElementById('patternSliderVal');
-  const brightSlider = document.getElementById('brightSlider');
-  const brightSliderVal = document.getElementById('brightSliderVal');
-  const shuffleSlider = document.getElementById('shuffleSlider');
-  const shuffleSliderVal = document.getElementById('shuffleSliderVal');
-  const shuffleFlag = document.getElementById('shuffleFlag');
-  const sleepTimerFlag = document.getElementById('sleepTimerFlag');
-  const powerLockFlag = document.getElementById('powerLockFlag');
-  const listCircles = document.getElementById('listCircles');
-  const currentListCircle = document.getElementById('currentListCircle');
-  const currentPatternCircle = document.getElementById('currentPatternCircle');
+  <script>
+    // ---- BLE UART UUIDs (Nordic / Bluefruit) ----
+    const UART_SERVICE_UUID   = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const UART_RX_CHAR_UUID   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+    const UART_TX_CHAR_UUID   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
 
-  // Graph data (approx 600 points ~30s at 20Hz)
-  const MAX_POINTS = 600;
-  let gyroData = { t: [], gx: [], gy: [], gz: [] };
-  let accelData = { t: [], ax: [], ay: [], az: [] };
-  let micData = { t: [], mic: [] };
+    let bleDevice      = null;
+    let bleServer      = null;
+    let uartService    = null;
+    let uartRxChar     = null; // write
+    let uartTxChar     = null; // notify
 
-  function trimSeries(arr) {
-    while (arr.length > MAX_POINTS) arr.shift();
-  }
+    let receiveBuffer = '';
 
-  function pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
-    gyroData.t.push(ms);
-    gyroData.gx.push(gx);
-    gyroData.gy.push(gy);
-    gyroData.gz.push(gz);
-    accelData.t.push(ms);
-    accelData.ax.push(ax);
-    accelData.ay.push(ay);
-    accelData.az.push(az);
-    micData.t.push(ms);
-    micData.mic.push(mic);
+    const DEVICE_STATES = [
+      'OFF',
+      'PLAY',
+      'SLEEP',
+      'SHUFFLE',
+      'PAIRING',
+      'L_SELECT',
+      'B_SELECT',
+      'T_SELECT'
+    ];
 
-    trimSeries(gyroData.t);
-    trimSeries(gyroData.gx);
-    trimSeries(gyroData.gy);
-    trimSeries(gyroData.gz);
-    trimSeries(accelData.t);
-    trimSeries(accelData.ax);
-    trimSeries(accelData.ay);
-    trimSeries(accelData.az);
-    trimSeries(micData.t);
-    trimSeries(micData.mic);
-  }
+    const LIST_NAMES = [
+      'White','Red','Orange','Yellow','Green','Blue','Indigo','Violet','Black'
+    ];
+    const LIST_CLASS = [
+      'list-white',
+      'list-red',
+      'list-orange',
+      'list-yellow',
+      'list-green',
+      'list-blue',
+      'list-indigo',
+      'list-violet',
+      'list-black'
+    ];
 
-  // Chart.js setup
-  const gyroCtx = document.getElementById('gyroCanvas').getContext('2d');
-  const accelCtx = document.getElementById('accelCanvas').getContext('2d');
-  const micCtx = document.getElementById('micCanvas').getContext('2d');
+    // ---- UI elements ----
+    const connectBtn          = document.getElementById('connectBtn');
+    const connectionStatus    = document.getElementById('connectionStatus');
+    const deviceStateLabel    = document.getElementById('deviceState');
+    const listPatternText     = document.getElementById('listPatternText');
+    const patternBadge        = document.getElementById('currentPatternBadge');
 
-  const gyroChart = new Chart(gyroCtx, {
-    type: 'line',
-    data: {
-      labels: gyroData.t,
-      datasets: [
-        { label: 'gx', data: gyroData.gx, borderWidth: 1, pointRadius: 0 },
-        { label: 'gy', data: gyroData.gy, borderWidth: 1, pointRadius: 0 },
-        { label: 'gz', data: gyroData.gz, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
+    const prevListBtn         = document.getElementById('prevListBtn');
+    const nextListBtn         = document.getElementById('nextListBtn');
+    const prevPatternBtn      = document.getElementById('prevPatternBtn');
+    const nextPatternBtn      = document.getElementById('nextPatternBtn');
+    const favoriteBtn         = document.getElementById('favoriteBtn');
+    const sleepBtn            = document.getElementById('sleepBtn');
+    const raveBtn             = document.getElementById('raveBtn');
+
+    const brightnessSlider    = document.getElementById('brightnessSlider');
+    const brightnessValue     = document.getElementById('brightnessValue');
+    const shuffleSlider       = document.getElementById('shuffleSlider');
+    const shuffleValue        = document.getElementById('shuffleValue');
+
+    const listSelect          = document.getElementById('listSelect');
+    const patternSlider       = document.getElementById('patternSlider');
+    const patternIndexLabel   = document.getElementById('patternIndexLabel');
+    const applyPatternBtn     = document.getElementById('applyPatternBtn');
+
+    const imuDot              = document.getElementById('imuDot');
+    const micDot              = document.getElementById('micDot');
+
+    // ---- Graph data (30s window @ ~10Hz => ~300 samples) ----
+    const MAX_POINTS = 300;
+    const accelData = { t: [], x: [], y: [], z: [] };
+    const gyroData  = { t: [], x: [], y: [], z: [] };
+    const micData   = { t: [], v: [] };
+
+    const accelChart = new Chart(
+      document.getElementById('accelChart'),
+      {
+        type: 'line',
+        data: {
+          labels: accelData.t,
+          datasets: [
+            { label: 'Ax (×10^-3)', data: accelData.x, borderWidth: 1, pointRadius: 0 },
+            { label: 'Ay (×10^-3)', data: accelData.y, borderWidth: 1, pointRadius: 0 },
+            { label: 'Az (×10^-3)', data: accelData.z, borderWidth: 1, pointRadius: 0 }
+          ]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { display: false },
+            y: { display: true }
+          },
+          plugins: {
+            legend: { labels: { color: '#eee', font: { size: 10 } } }
+          }
         }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
+      }
+    );
+
+    const gyroChart = new Chart(
+      document.getElementById('gyroChart'),
+      {
+        type: 'line',
+        data: {
+          labels: gyroData.t,
+          datasets: [
+            { label: 'Gx (×10^-2)', data: gyroData.x, borderWidth: 1, pointRadius: 0 },
+            { label: 'Gy (×10^-2)', data: gyroData.y, borderWidth: 1, pointRadius: 0 },
+            { label: 'Gz (×10^-2)', data: gyroData.z, borderWidth: 1, pointRadius: 0 }
+          ]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { display: false },
+            y: { display: true }
+          },
+          plugins: {
+            legend: { labels: { color: '#eee', font: { size: 10 } } }
+          }
+        }
+      }
+    );
+
+    const micChart = new Chart(
+      document.getElementById('micChart'),
+      {
+        type: 'line',
+        data: {
+          labels: micData.t,
+          datasets: [
+            { label: 'Mic level', data: micData.v, borderWidth: 1, pointRadius: 0 }
+          ]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { display: false },
+            y: { display: true }
+          },
+          plugins: {
+            legend: { labels: { color: '#eee', font: { size: 10 } } }
+          }
+        }
+      }
+    );
+
+    function addPoint(buffer, tValue, values) {
+      buffer.t.push(tValue);
+      for (let i = 0; i < values.length; i++) {
+        values[i].arr.push(values[i].v);
+      }
+      if (buffer.t.length > MAX_POINTS) {
+        buffer.t.shift();
+        values.forEach(v => v.arr.shift());
       }
     }
-  });
 
-  const accelChart = new Chart(accelCtx, {
-    type: 'line',
-    data: {
-      labels: accelData.t,
-      datasets: [
-        { label: 'ax', data: accelData.ax, borderWidth: 1, pointRadius: 0 },
-        { label: 'ay', data: accelData.ay, borderWidth: 1, pointRadius: 0 },
-        { label: 'az', data: accelData.az, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
+    function pushAccelSample(t, ax, ay, az) {
+      accelData.t.push(t);
+      accelData.x.push(ax);
+      accelData.y.push(ay);
+      accelData.z.push(az);
+      if (accelData.t.length > MAX_POINTS) {
+        accelData.t.shift();
+        accelData.x.shift();
+        accelData.y.shift();
+        accelData.z.shift();
+      }
+      accelChart.update('none');
+    }
+
+    function pushGyroSample(t, gx, gy, gz) {
+      gyroData.t.push(t);
+      gyroData.x.push(gx);
+      gyroData.y.push(gy);
+      gyroData.z.push(gz);
+      if (gyroData.t.length > MAX_POINTS) {
+        gyroData.t.shift();
+        gyroData.x.shift();
+        gyroData.y.shift();
+        gyroData.z.shift();
+      }
+      gyroChart.update('none');
+    }
+
+    function pushMicSample(t, m) {
+      micData.t.push(t);
+      micData.v.push(m);
+      if (micData.t.length > MAX_POINTS) {
+        micData.t.shift();
+        micData.v.shift();
+      }
+      micChart.update('none');
+    }
+
+    // ---- Telemetry parsing ----
+    function handleUartNotification(event) {
+      const value = event.target.value;
+      const decoder = new TextDecoder('utf-8');
+      receiveBuffer += decoder.decode(value);
+
+      let newlineIndex;
+      while ((newlineIndex = receiveBuffer.indexOf('\n')) >= 0) {
+        const line = receiveBuffer.slice(0, newlineIndex).trim();
+        receiveBuffer = receiveBuffer.slice(newlineIndex + 1);
+        if (line.length > 0) {
+          parseTelemetryLine(line);
         }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
       }
     }
-  });
 
-  const micChart = new Chart(micCtx, {
-    type: 'line',
-    data: {
-      labels: micData.t,
-      datasets: [
-        { label: 'mic', data: micData.mic, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
+    function parseTelemetryLine(line) {
+      if (!line.startsWith('T,')) {
+        return;
+      }
+      // T,state,list,pattern,time_ms,ax,ay,az,gx,gy,gz,mic
+      const parts = line.split(',');
+      if (parts.length < 12) {
+        console.warn('Malformed telemetry:', line);
+        return;
+      }
+      const state   = parseInt(parts[1], 10);
+      const listNum = parseInt(parts[2], 10);
+      const patNum  = parseInt(parts[3], 10);
+      const t       = parseInt(parts[4], 10);
+      const ax      = parseInt(parts[5], 10);
+      const ay      = parseInt(parts[6], 10);
+      const az      = parseInt(parts[7], 10);
+      const gx      = parseInt(parts[8], 10);
+      const gy      = parseInt(parts[9], 10);
+      const gz      = parseInt(parts[10], 10);
+      const mic     = parseInt(parts[11], 10);
+
+      // Update status text
+      const stateName = DEVICE_STATES[state] ?? 'Unknown';
+      const listName  = LIST_NAMES[listNum] ?? '-';
+
+      deviceStateLabel.textContent = `State: ${stateName}`;
+      listPatternText.textContent  = `List: ${listName} (${listNum}) · Pattern: ${patNum}`;
+
+      // Update badge
+      patternBadge.textContent = String(patNum);
+      patternBadge.className = 'pattern-badge ' + (LIST_CLASS[listNum] ?? 'list-black');
+
+      // Mark sensors active
+      imuDot.style.backgroundColor  = '#4caf50';
+      micDot.style.backgroundColor  = '#4caf50';
+
+      // Push data into charts
+      pushAccelSample(t, ax, ay, az);
+      pushGyroSample(t, gx, gy, gz);
+      pushMicSample(t, mic);
+    }
+
+    // ---- Command sending ----
+
+    async function sendTextCommand(text) {
+      if (!uartRxChar) return;
+      const encoder = new TextEncoder();
+      try {
+        await uartRxChar.writeValueWithoutResponse(encoder.encode(text));
+      } catch (e) {
+        console.error('writeValueWithoutResponse failed, retry with writeValue', e);
+        try {
+          await uartRxChar.writeValue(encoder.encode(text));
+        } catch (e2) {
+          console.error('writeValue failed', e2);
         }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
       }
     }
-  });
 
-  function updateCharts() {
-    gyroChart.data.labels = gyroData.t;
-    gyroChart.data.datasets[0].data = gyroData.gx;
-    gyroChart.data.datasets[1].data = gyroData.gy;
-    gyroChart.data.datasets[2].data = gyroData.gz;
-    gyroChart.update('none');
-
-    accelChart.data.labels = accelData.t;
-    accelChart.data.datasets[0].data = accelData.ax;
-    accelChart.data.datasets[1].data = accelData.ay;
-    accelChart.data.datasets[2].data = accelData.az;
-    accelChart.update('none');
-
-    micChart.data.labels = micData.t;
-    micChart.data.datasets[0].data = micData.mic;
-    micChart.update('none');
-  }
-
-  setInterval(updateCharts, 200);
-
-  // State label helper
-  function stateNameFromId(id) {
-    switch (id) {
-      case 0: return 'OFF';
-      case 1: return 'PLAY';
-      case 2: return 'SLEEP';
-      case 3: return 'SHUFFLE';
-      case 4: return 'PAIRING';
-      case 5: return 'L_SELECT';
-      case 6: return 'B_SELECT';
-      case 7: return 'T_SELECT';
-      default: return '?';
+    function sendSimpleCommand(cmdChar) {
+      // simple one-letter command plus newline
+      sendTextCommand(cmdChar + '\n');
     }
-  }
 
-  // list colors for UI (must match C++ order)
-  const listColors = [
-    '#ffffff', // WHITE
-    '#ff0000', // RED
-    '#ff7f00', // ORANGE
-    '#ffff00', // YELLOW
-    '#00ff00', // GREEN
-    '#0000ff', // BLUE
-    '#4b0082', // INDIGO
-    '#ee82ee', // VIOLET
-    '#000000'  // BLACK (reserved)
-  ];
+    // ---- Connection handling ----
 
-  function buildListCircles() {
-    listCircles.innerHTML = '';
-    listColors.forEach((color, idx) => {
-      const div = document.createElement('div');
-      div.className = 'list-circle';
-      div.style.background = color;
-      div.title = `List ${idx}`;
-      div.dataset.listIndex = idx.toString();
-      div.addEventListener('click', () => {
-        sendCommand(`SET:LIST:${idx}`);
-        highlightActiveList(idx);
-      });
-      listCircles.appendChild(div);
-    });
-  }
+    async function connect() {
+      try {
+        connectionStatus.textContent = 'Requesting device...';
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'FiddleStIX_V1' }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
 
-  function highlightActiveList(idx) {
-    Array.from(listCircles.children).forEach((child, i) => {
-      child.classList.toggle('active', i === idx);
-    });
-  }
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-  function updateStatusCircles(listIndex, patternIndex) {
-    const color = listColors[listIndex] || '#000000';
+        connectionStatus.textContent = 'Connecting...';
+        bleServer = await bleDevice.gatt.connect();
 
-    currentListCircle.style.background = color;
-    currentListCircle.textContent = listIndex.toString();
-    currentListCircle.style.color = (color.toLowerCase() === '#000000') ? '#ffffff' : '#000000';
+        uartService = await bleServer.getPrimaryService(UART_SERVICE_UUID);
+        uartRxChar  = await uartService.getCharacteristic(UART_RX_CHAR_UUID);
+        uartTxChar  = await uartService.getCharacteristic(UART_TX_CHAR_UUID);
 
-    currentPatternCircle.style.background = color;
-    currentPatternCircle.textContent = patternIndex.toString();
-    currentPatternCircle.style.color = (color.toLowerCase() === '#000000') ? '#ffffff' : '#000000';
-  }
+        await uartTxChar.startNotifications();
+        uartTxChar.addEventListener('characteristicvaluechanged', handleUartNotification);
 
-  buildListCircles();
+        connectionStatus.textContent = 'Connected';
+        connectBtn.textContent = 'Disconnect';
 
-  function setConnectedUI(connected) {
-    if (connected) {
-      connectBtn.textContent = 'Disconnect';
-      connectBtn.classList.add('connected');
-    } else {
+      } catch (error) {
+        console.error(error);
+        connectionStatus.textContent = 'Error: ' + error;
+      }
+    }
+
+    async function disconnect() {
+      if (!bleDevice) return;
+      connectionStatus.textContent = 'Disconnecting...';
+      try {
+        if (bleDevice.gatt.connected) {
+          await bleDevice.gatt.disconnect();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      connectionStatus.textContent = 'Disconnected';
       connectBtn.textContent = 'Connect';
-      connectBtn.classList.remove('connected');
+      uartService = null;
+      uartRxChar  = null;
+      uartTxChar  = null;
     }
-  }
 
-  async function connect() {
-    try {
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: 'FiddleStIX_V1' }],
-        optionalServices: [UART_SERVICE_UUID]
-      });
-
-      device.addEventListener('gattserverdisconnected', onDisconnected);
-
-      server = await device.gatt.connect();
-      uartService = await server.getPrimaryService(UART_SERVICE_UUID);
-      rxChar = await uartService.getCharacteristic(UART_RX_CHAR_UUID);
-      txChar = await uartService.getCharacteristic(UART_TX_CHAR_UUID);
-
-      await txChar.startNotifications();
-      txChar.addEventListener('characteristicvaluechanged', handleNotifications);
-
-      setConnectedUI(true);
-    } catch (err) {
-      console.error('BLE connect error', err);
-      alert('BLE connection failed: ' + err);
-      setConnectedUI(false);
+    function onDisconnected() {
+      connectionStatus.textContent = 'Disconnected';
+      connectBtn.textContent = 'Connect';
+      uartService = null;
+      uartRxChar  = null;
+      uartTxChar  = null;
     }
-  }
 
-  async function disconnect() {
-    try {
-      if (device && device.gatt.connected) {
-        await device.gatt.disconnect();
-      }
-    } catch (err) {
-      console.error('BLE disconnect error', err);
-    } finally {
-      setConnectedUI(false);
-    }
-  }
+    // ---- UI wiring ----
 
-  function onDisconnected() {
-    console.log('Device disconnected');
-    setConnectedUI(false);
-  }
-
-  function handleNotifications(event) {
-    const value = event.target.value;
-    const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(value);
-
-    // Could be multiple lines in one notification:
-    text.split('\n').forEach(line => {
-      line = line.trim();
-      if (!line) return;
-      if (line.startsWith('T,')) {
-        parseTelemetryLine(line);
+    connectBtn.addEventListener('click', () => {
+      if (!bleDevice || !bleDevice.gatt || !bleDevice.gatt.connected) {
+        connect();
       } else {
-        console.log('RX:', line);
+        disconnect();
       }
     });
-  }
 
-  function parseTelemetryLine(line) {
-    // T,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
-    const parts = line.split(',');
-    if (parts.length < 12) return;
+    prevListBtn.addEventListener('click', () => sendSimpleCommand('L')); // previous list
+    nextListBtn.addEventListener('click', () => sendSimpleCommand('l')); // next list
+    prevPatternBtn.addEventListener('click', () => sendSimpleCommand('P')); // previous pattern
+    nextPatternBtn.addEventListener('click', () => sendSimpleCommand('p')); // next pattern
+    favoriteBtn.addEventListener('click', () => sendSimpleCommand('F')); // whitelist
+    sleepBtn.addEventListener('click', () => sendSimpleCommand('S')); // sleep
+    raveBtn.addEventListener('click', () => sendSimpleCommand('R')); // rave
 
-    const ms = parseInt(parts[1]);
-    const ax = parseFloat(parts[2]);
-    const ay = parseFloat(parts[3]);
-    const az = parseFloat(parts[4]);
-    const gx = parseFloat(parts[5]);
-    const gy = parseFloat(parts[6]);
-    const gz = parseFloat(parts[7]);
-    const mic = parseFloat(parts[8]);
-    const list = parseInt(parts[9]);
-    const pattern = parseInt(parts[10]);
-    const state = parseInt(parts[11]);
-
-    pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
-
-    stateLabel.textContent = stateNameFromId(state);
-    patternSlider.value = pattern;
-    patternSliderVal.textContent = pattern.toString();
-    highlightActiveList(list);
-    updateStatusCircles(list, pattern);
-  }
-
-  async function sendCommand(str) {
-    if (!rxChar) {
-      alert('Not connected to device');
-      return;
-    }
-    const data = new TextEncoder().encode(str + '\n');
-    try {
-      await rxChar.writeValue(data);
-    } catch (err) {
-      console.error('sendCommand error', err);
-    }
-  }
-
-  // UI events
-  connectBtn.addEventListener('click', () => {
-    if (device && device.gatt && device.gatt.connected) {
-      disconnect();
-    } else {
-      connect();
-    }
-  });
-
-  document.querySelectorAll('.controls-grid button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cmd = btn.dataset.cmd;
-      if (cmd) sendCommand(cmd);
+    brightnessSlider.addEventListener('input', () => {
+      const v = parseInt(brightnessSlider.value, 10);
+      brightnessValue.textContent = v;
+      sendTextCommand('B' + v + '\n');
     });
-  });
 
-  patternSlider.addEventListener('input', () => {
-    patternSliderVal.textContent = patternSlider.value;
-  });
-  patternSlider.addEventListener('change', () => {
-    sendCommand(`SET:PATTERN:${patternSlider.value}`);
-  });
+    shuffleSlider.addEventListener('input', () => {
+      const v = parseInt(shuffleSlider.value, 10);
+      shuffleValue.textContent = v + ' ms';
+      sendTextCommand('T' + v + '\n');
+    });
 
-  brightSlider.addEventListener('input', () => {
-    brightSliderVal.textContent = brightSlider.value;
-  });
-  brightSlider.addEventListener('change', () => {
-    sendCommand(`SET:BRIGHT:${brightSlider.value}`);
-  });
+    listSelect.addEventListener('change', () => {
+      // just update local label; actual change happens on Apply
+    });
 
-  shuffleSlider.addEventListener('input', () => {
-    shuffleSliderVal.textContent = shuffleSlider.value;
-  });
-  shuffleSlider.addEventListener('change', () => {
-    sendCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
-  });
+    patternSlider.addEventListener('input', () => {
+      const v = parseInt(patternSlider.value, 10);
+      patternIndexLabel.textContent = v;
+    });
 
-  shuffleFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
-  });
-  sleepTimerFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
-  });
-  powerLockFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
-  });
-</script>
+    applyPatternBtn.addEventListener('click', () => {
+      const ln = parseInt(listSelect.value, 10);
+      const pn = parseInt(patternSlider.value, 10);
+      // Encode as "C<list>,<pattern>\n"
+      sendTextCommand('C' + ln + ',' + pn + '\n');
+    });
+
+    // Initial labels
+    brightnessValue.textContent = brightnessSlider.value;
+    shuffleValue.textContent = shuffleSlider.value + ' ms';
+    patternIndexLabel.textContent = patternSlider.value;
+
+    // Feature detection
+    if (!navigator.bluetooth) {
+      connectionStatus.textContent = 'Web Bluetooth not supported in this browser.';
+      connectBtn.disabled = true;
+    }
+  </script>
 </body>
 </html>
