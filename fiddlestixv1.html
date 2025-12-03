@@ -9,98 +9,217 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+    :root {
+      --card-bg: rgba(12, 12, 20, 0.92);
+      --card-border: rgba(255, 255, 255, 0.15);
+      --accent: #ff7bff;
+      --accent-2: #4dfcba;
+      --accent-3: #ffc94d;
+      --text-main: #fdfdfd;
+      --text-muted: #b9b9c9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111;
-      color: #eee;
+      color: var(--text-main);
       margin: 0;
       padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+
+      /* Psychedelic animated gradient background */
+      background:
+        radial-gradient(circle at 10% 20%, rgba(255, 0, 153, 0.4), transparent 50%),
+        radial-gradient(circle at 90% 10%, rgba(0, 255, 204, 0.35), transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(0, 153, 255, 0.3), transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 0, 0.3), transparent 60%),
+        linear-gradient(135deg, #050510, #050513);
+      background-size: 200% 200%;
+      animation: bgShift 20s ease-in-out infinite;
     }
+
+    @keyframes bgShift {
+      0%   { background-position: 0% 0%; }
+      25%  { background-position: 100% 0%; }
+      50%  { background-position: 100% 100%; }
+      75%  { background-position: 0% 100%; }
+      100% { background-position: 0% 0%; }
+    }
+
     header {
-      padding: 12px 16px;
-      background: #222;
-      border-bottom: 1px solid #333;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 10px 16px;
+      background: rgba(5, 5, 20, 0.9);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
     }
+
     header h1 {
       font-size: 1.2rem;
       margin: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
+
+    header h1::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #ff7bff, #4dfcba, #ffc94d, #ff7bff);
+      box-shadow: 0 0 14px rgba(255, 123, 255, 0.9);
+    }
+
     button {
-      background: #2b7cff;
+      background: radial-gradient(circle at 0% 0%, #ffc94d, #ff7bff);
       border: none;
-      color: #fff;
+      color: #050508;
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 999px;
       cursor: pointer;
       font-size: 0.9rem;
       margin: 2px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      box-shadow: 0 0 10px rgba(255, 123, 255, 0.6);
+      transition: transform 0.08s ease-out, box-shadow 0.1s ease-out, filter 0.08s;
     }
+
     button:disabled {
       opacity: 0.4;
       cursor: default;
+      box-shadow: none;
+      filter: grayscale(0.4);
     }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.5);
+      filter: brightness(1.1);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+    }
+
     main {
-      padding: 12px 16px 32px 16px;
+      padding: 14px 16px 32px 16px;
       display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 3fr);
       gap: 16px;
     }
+
     @media (max-width: 900px) {
       main {
         grid-template-columns: 1fr;
       }
     }
+
     .card {
-      background: #181818;
-      border-radius: 10px;
+      background: var(--card-bg);
+      border-radius: 16px;
       padding: 12px 14px;
-      border: 1px solid #333;
+      border: 1px solid var(--card-border);
       margin-bottom: 12px;
+      box-shadow:
+        0 0 24px rgba(0,0,0,0.7),
+        0 0 20px rgba(255, 255, 255, 0.03);
+      position: relative;
+      overflow: hidden;
     }
+
+    .card::before {
+      /* faint swirling highlight */
+      content: "";
+      position: absolute;
+      inset: -40%;
+      opacity: 0.15;
+      background:
+        radial-gradient(circle at 20% 0%, #ff7bff, transparent 50%),
+        radial-gradient(circle at 80% 100%, #4dfcba, transparent 55%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
     .card h2 {
       font-size: 1rem;
       margin: 0 0 8px 0;
-      color: #f5f5f5;
+      color: #fdfdfd;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
+
     .status-line {
       font-size: 0.9rem;
       margin-top: 4px;
+      color: var(--text-muted);
     }
+
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #262626;
+      background: rgba(35, 35, 50, 0.9);
       border-radius: 999px;
       padding: 4px 10px;
-      font-size: 0.85rem;
-      margin: 2px 0;
+      font-size: 0.82rem;
+      margin: 3px 4px 0 0;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
+
     .pill-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #888;
+      background: #555;
+      box-shadow: 0 0 8px rgba(0,0,0,0.6);
     }
+
     .controls-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 6px;
       margin-top: 6px;
     }
+
     label {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       display: block;
       margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
     }
+
     input[type="range"] {
       width: 100%;
+      accent-color: var(--accent);
     }
+
+    select {
+      background: #191926;
+      color: var(--text-main);
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 4px 8px;
+      font-size: 0.85rem;
+    }
+
     .row {
       display: flex;
       flex-wrap: wrap;
@@ -108,12 +227,16 @@
       align-items: center;
       margin-top: 4px;
     }
+
     .value-badge {
-      background: #2c2c2c;
+      background: rgba(28, 28, 44, 0.9);
       border-radius: 999px;
-      padding: 2px 8px;
+      padding: 2px 10px;
       font-size: 0.8rem;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-main);
     }
+
     canvas {
       width: 100% !important;
       height: 160px !important;
@@ -128,9 +251,10 @@
       align-items: center;
       justify-content: center;
       font-size: 0.9rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-left: 8px;
-      border: 2px solid #444;
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 0 8px rgba(0,0,0,0.8);
     }
 
     /* List colors */
@@ -144,14 +268,19 @@
     .list-violet { background: #8e44ad; color: #ffffff; }
     .list-black { background: #000000; color: #ffffff; }
 
+    /* Connection status */
+    #connectionStatus {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>FiddleStIX V1 Control</h1>
+    <h1>FiddleStIX V1</h1>
     <div>
       <button id="connectBtn">Connect</button>
-      <span id="connectionStatus" class="status-line">Not connected</span>
+      <span id="connectionStatus">Not connected</span>
     </div>
   </header>
 
@@ -162,11 +291,11 @@
         <div class="status-line">
           <span id="deviceState">State: Unknown</span>
         </div>
-        <div class="status-line">
+        <div class="status-line" style="margin-top: 6px;">
           <span id="listPatternText">List: - · Pattern: -</span>
           <span id="currentPatternBadge" class="pattern-badge list-black">-</span>
         </div>
-        <div class="status-line">
+        <div class="status-line" style="margin-top: 8px;">
           <span class="pill">
             <span class="pill-dot" id="imuDot"></span>
             IMU updating
@@ -212,25 +341,29 @@
       <div class="card">
         <h2>Pattern Selector</h2>
         <div class="row">
-          <label for="listSelect">List</label>
-          <select id="listSelect">
-            <option value="0">White</option>
-            <option value="1">Red</option>
-            <option value="2">Orange</option>
-            <option value="3">Yellow</option>
-            <option value="4">Green</option>
-            <option value="5">Blue</option>
-            <option value="6">Indigo</option>
-            <option value="7">Violet</option>
-            <option value="8">Black</option>
-          </select>
+          <div>
+            <label for="listSelect">List</label>
+            <select id="listSelect">
+              <option value="0">White</option>
+              <option value="1">Red</option>
+              <option value="2">Orange</option>
+              <option value="3">Yellow</option>
+              <option value="4">Green</option>
+              <option value="5">Blue</option>
+              <option value="6">Indigo</option>
+              <option value="7">Violet</option>
+              <option value="8">Black</option>
+            </select>
+          </div>
         </div>
         <div class="row">
-          <label for="patternSlider">Pattern Index</label>
-          <input type="range" id="patternSlider" min="0" max="0" step="1" value="0">
+          <div style="flex:1 1 150px;">
+            <label for="patternSlider">Pattern Index</label>
+            <input type="range" id="patternSlider" min="0" max="0" step="1" value="0">
+          </div>
           <span class="value-badge" id="patternIndexLabel">0</span>
         </div>
-        <button id="applyPatternBtn">Apply Selection</button>
+        <button id="applyPatternBtn" style="margin-top:8px;">Apply Selection</button>
       </div>
     </section>
 
@@ -331,9 +464,9 @@
         data: {
           labels: accelData.t,
           datasets: [
-            { label: 'Ax (×10^-3)', data: accelData.x, borderWidth: 1, pointRadius: 0 },
-            { label: 'Ay (×10^-3)', data: accelData.y, borderWidth: 1, pointRadius: 0 },
-            { label: 'Az (×10^-3)', data: accelData.z, borderWidth: 1, pointRadius: 0 }
+            { label: 'Ax (×10⁻³)', data: accelData.x, borderWidth: 1, pointRadius: 0 },
+            { label: 'Ay (×10⁻³)', data: accelData.y, borderWidth: 1, pointRadius: 0 },
+            { label: 'Az (×10⁻³)', data: accelData.z, borderWidth: 1, pointRadius: 0 }
           ]
         },
         options: {
@@ -342,7 +475,7 @@
           maintainAspectRatio: false,
           scales: {
             x: { display: false },
-            y: { display: true }
+            y: { display: true, ticks: { color: '#eee' }, grid: { color: 'rgba(255,255,255,0.07)' } }
           },
           plugins: {
             legend: { labels: { color: '#eee', font: { size: 10 } } }
@@ -358,9 +491,9 @@
         data: {
           labels: gyroData.t,
           datasets: [
-            { label: 'Gx (×10^-2)', data: gyroData.x, borderWidth: 1, pointRadius: 0 },
-            { label: 'Gy (×10^-2)', data: gyroData.y, borderWidth: 1, pointRadius: 0 },
-            { label: 'Gz (×10^-2)', data: gyroData.z, borderWidth: 1, pointRadius: 0 }
+            { label: 'Gx (×10⁻²)', data: gyroData.x, borderWidth: 1, pointRadius: 0 },
+            { label: 'Gy (×10⁻²)', data: gyroData.y, borderWidth: 1, pointRadius: 0 },
+            { label: 'Gz (×10⁻²)', data: gyroData.z, borderWidth: 1, pointRadius: 0 }
           ]
         },
         options: {
@@ -369,7 +502,7 @@
           maintainAspectRatio: false,
           scales: {
             x: { display: false },
-            y: { display: true }
+            y: { display: true, ticks: { color: '#eee' }, grid: { color: 'rgba(255,255,255,0.07)' } }
           },
           plugins: {
             legend: { labels: { color: '#eee', font: { size: 10 } } }
@@ -394,7 +527,7 @@
           maintainAspectRatio: false,
           scales: {
             x: { display: false },
-            y: { display: true }
+            y: { display: true, ticks: { color: '#eee' }, grid: { color: 'rgba(255,255,255,0.07)' } }
           },
           plugins: {
             legend: { labels: { color: '#eee', font: { size: 10 } } }
@@ -402,17 +535,6 @@
         }
       }
     );
-
-    function addPoint(buffer, tValue, values) {
-      buffer.t.push(tValue);
-      for (let i = 0; i < values.length; i++) {
-        values[i].arr.push(values[i].v);
-      }
-      if (buffer.t.length > MAX_POINTS) {
-        buffer.t.shift();
-        values.forEach(v => v.arr.shift());
-      }
-    }
 
     function pushAccelSample(t, ax, ay, az) {
       accelData.t.push(t);
@@ -490,7 +612,6 @@
       const gz      = parseInt(parts[10], 10);
       const mic     = parseInt(parts[11], 10);
 
-      // Update status text
       const stateName = DEVICE_STATES[state] ?? 'Unknown';
       const listName  = LIST_NAMES[listNum] ?? '-';
 
@@ -502,8 +623,8 @@
       patternBadge.className = 'pattern-badge ' + (LIST_CLASS[listNum] ?? 'list-black');
 
       // Mark sensors active
-      imuDot.style.backgroundColor  = '#4caf50';
-      micDot.style.backgroundColor  = '#4caf50';
+      imuDot.style.backgroundColor = '#4dfcba';
+      micDot.style.backgroundColor = '#ffc94d';
 
       // Push data into charts
       pushAccelSample(t, ax, ay, az);
@@ -529,7 +650,6 @@
     }
 
     function sendSimpleCommand(cmdChar) {
-      // simple one-letter command plus newline
       sendTextCommand(cmdChar + '\n');
     }
 
@@ -599,13 +719,13 @@
       }
     });
 
-    prevListBtn.addEventListener('click', () => sendSimpleCommand('L')); // previous list
-    nextListBtn.addEventListener('click', () => sendSimpleCommand('l')); // next list
-    prevPatternBtn.addEventListener('click', () => sendSimpleCommand('P')); // previous pattern
-    nextPatternBtn.addEventListener('click', () => sendSimpleCommand('p')); // next pattern
-    favoriteBtn.addEventListener('click', () => sendSimpleCommand('F')); // whitelist
-    sleepBtn.addEventListener('click', () => sendSimpleCommand('S')); // sleep
-    raveBtn.addEventListener('click', () => sendSimpleCommand('R')); // rave
+    prevListBtn.addEventListener('click', () => sendSimpleCommand('L'));
+    nextListBtn.addEventListener('click', () => sendSimpleCommand('l'));
+    prevPatternBtn.addEventListener('click', () => sendSimpleCommand('P'));
+    nextPatternBtn.addEventListener('click', () => sendSimpleCommand('p'));
+    favoriteBtn.addEventListener('click', () => sendSimpleCommand('F'));
+    sleepBtn.addEventListener('click', () => sendSimpleCommand('S'));
+    raveBtn.addEventListener('click', () => sendSimpleCommand('R'));
 
     brightnessSlider.addEventListener('input', () => {
       const v = parseInt(brightnessSlider.value, 10);
@@ -619,10 +739,6 @@
       sendTextCommand('T' + v + '\n');
     });
 
-    listSelect.addEventListener('change', () => {
-      // just update local label; actual change happens on Apply
-    });
-
     patternSlider.addEventListener('input', () => {
       const v = parseInt(patternSlider.value, 10);
       patternIndexLabel.textContent = v;
@@ -631,16 +747,13 @@
     applyPatternBtn.addEventListener('click', () => {
       const ln = parseInt(listSelect.value, 10);
       const pn = parseInt(patternSlider.value, 10);
-      // Encode as "C<list>,<pattern>\n"
       sendTextCommand('C' + ln + ',' + pn + '\n');
     });
 
-    // Initial labels
     brightnessValue.textContent = brightnessSlider.value;
     shuffleValue.textContent = shuffleSlider.value + ' ms';
     patternIndexLabel.textContent = patternSlider.value;
 
-    // Feature detection
     if (!navigator.bluetooth) {
       connectionStatus.textContent = 'Web Bluetooth not supported in this browser.';
       connectBtn.disabled = true;
