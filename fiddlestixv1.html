@@ -5,9 +5,11 @@
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Chart.js for plotting IMU/mic data -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+    /* Basic dark UI layout */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
@@ -136,6 +138,17 @@
       color: #aaa;
       margin-bottom: 0.5rem;
     }
+    .debug-box {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      color: #ccc;
+      background: #111;
+      border-radius: 6px;
+      padding: 0.5rem;
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #333;
+    }
     @media (max-width: 900px) {
       main {
         grid-template-columns: 1fr;
@@ -146,13 +159,16 @@
 <body>
 <header>
   <h1>FiddleStIX V1 Control</h1>
+  <!-- Connect/disconnect button -->
   <button id="connectBtn">Connect</button>
 </header>
 
 <main>
+  <!-- LEFT SIDE: Controls + status -->
   <section id="controlSection">
     <h2>Controls</h2>
 
+    <!-- Current state info from telemetry -->
     <div class="status-line">
       Device state:
       <span id="stateLabel">Unknown</span> ·
@@ -160,6 +176,7 @@
       Pattern: <span id="patternLabel">-</span>
     </div>
 
+    <!-- Buttons that send CMD:... lines to firmware -->
     <div class="controls-grid">
       <button data-cmd="CMD:PREV_LIST">Previous Page</button>
       <button data-cmd="CMD:NEXT_LIST">Next Page</button>
@@ -172,29 +189,34 @@
 
     <hr style="border: none; border-top: 1px solid #333; margin: 1rem 0;">
 
+    <!-- List selector: clickable colored circles for each list index -->
     <div class="row">
       <label>Lists</label>
       <div class="list-circles" id="listCircles"></div>
     </div>
 
+    <!-- Pattern index slider (0–99) -->
     <div class="row">
       <label>Pattern #</label>
       <input type="range" id="patternSlider" min="0" max="99" value="0">
       <span class="value" id="patternSliderVal">0</span>
     </div>
 
+    <!-- Global brightness slider (0–7) -->
     <div class="row">
       <label>Brightness</label>
       <input type="range" id="brightSlider" min="0" max="7" value="7">
       <span class="value" id="brightSliderVal">7</span>
     </div>
 
+    <!-- Shuffle dwell time slider (ms) -->
     <div class="row">
       <label>Shuffle T (ms)</label>
       <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="5000">
       <span class="value" id="shuffleSliderVal">5000</span>
     </div>
 
+    <!-- Boolean flags: shuffle, sleepTimer, powerLock -->
     <div>
       <h2>Flags</h2>
       <div class="bool-toggle">
@@ -210,8 +232,14 @@
         <label for="powerLockFlag">Power Lock</label>
       </div>
     </div>
+
+    <!-- Simple debug text area to see latest telemetry lines / errors -->
+    <div class="debug-box" id="debugBox">
+      <!-- Filled from JS -->
+    </div>
   </section>
 
+  <!-- RIGHT SIDE: Graphs -->
   <section id="graphsSection">
     <h2>Sensor Graphs (last ~30s)</h2>
     <div class="graphs">
@@ -232,16 +260,24 @@
 </main>
 
 <script>
+  /************************************************************
+   * BLE UART UUIDs (Nordic / Adafruit UART)
+   *  - SERVICE: 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+   *  - RX CHAR (write):   6e400002-b5a3-f393-e0a9-e50e24dcca9e
+   *  - TX CHAR (notify):  6e400003-b5a3-f393-e0a9-e50e24dcca9e
+   ************************************************************/
   const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
   const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
   const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
+  // References to BLE objects
   let device = null;
   let server = null;
   let uartService = null;
-  let rxChar = null;
-  let txChar = null;
+  let rxChar = null; // write (GUI -> device)
+  let txChar = null; // notify (device -> GUI)
 
+  // UI elements
   const connectBtn = document.getElementById('connectBtn');
   const stateLabel = document.getElementById('stateLabel');
   const listLabel = document.getElementById('listLabel');
@@ -256,7 +292,12 @@
   const sleepTimerFlag = document.getElementById('sleepTimerFlag');
   const powerLockFlag = document.getElementById('powerLockFlag');
   const listCircles = document.getElementById('listCircles');
+  const debugBox = document.getElementById('debugBox');
 
+  /************************************************************
+   * DATA STRUCTURES FOR GRAPHS
+   * We keep ~600 points (30s @ 20Hz) for each series.
+   ************************************************************/
   const MAX_POINTS = 600;
   let gyroData = { t: [], gx: [], gy: [], gz: [] };
   let accelData = { t: [], ax: [], ay: [], az: [] };
@@ -266,6 +307,7 @@
     while (arr.length > MAX_POINTS) arr.shift();
   }
 
+  // Push one new sensor sample (from TEL line) into buffers
   function pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
     gyroData.t.push(ms);
     gyroData.gx.push(gx);
@@ -284,14 +326,19 @@
     trimArray(gyroData.gx);
     trimArray(gyroData.gy);
     trimArray(gyroData.gz);
+
     trimArray(accelData.t);
     trimArray(accelData.ax);
     trimArray(accelData.ay);
     trimArray(accelData.az);
+
     trimArray(micData.t);
     trimArray(micData.mic);
   }
 
+  /************************************************************
+   * CHART.JS SETUP
+   ************************************************************/
   const gyroCtx = document.getElementById('gyroCanvas').getContext('2d');
   const accelCtx = document.getElementById('accelCanvas').getContext('2d');
   const micCtx = document.getElementById('micCanvas').getContext('2d');
@@ -372,6 +419,7 @@
     }
   });
 
+  // Periodically refresh charts with the latest data
   function updateCharts() {
     gyroChart.data.labels = gyroData.t;
     gyroChart.data.datasets[0].data = gyroData.gx;
@@ -390,8 +438,9 @@
     micChart.update('none');
   }
 
-  setInterval(updateCharts, 200);
+  setInterval(updateCharts, 200); // update charts 5x per second
 
+  // Convert state ID (numeric) to text label
   function stateNameFromId(id) {
     switch (id) {
       case 0: return 'OFF';
@@ -406,18 +455,22 @@
     }
   }
 
+  /************************************************************
+   * LIST CIRCLE UI
+   ************************************************************/
   const listColors = [
-    '#ffffff',
-    '#ff0000',
-    '#ff7f00',
-    '#ffff00',
-    '#00ff00',
-    '#0000ff',
-    '#4b0082',
-    '#ee82ee',
-    '#000000'
+    '#ffffff', // WHITE
+    '#ff0000', // RED
+    '#ff7f00', // ORANGE
+    '#ffff00', // YELLOW
+    '#00ff00', // GREEN
+    '#0000ff', // BLUE
+    '#4b0082', // INDIGO
+    '#ee82ee', // VIOLET
+    '#000000'  // BLACK (reserved)
   ];
 
+  // Create a circle for each list index
   function buildListCircles() {
     listCircles.innerHTML = '';
     listColors.forEach((color, idx) => {
@@ -442,6 +495,9 @@
 
   buildListCircles();
 
+  /************************************************************
+   * CONNECT/DISCONNECT UI STATE
+   ************************************************************/
   function setConnectedUI(connected) {
     if (connected) {
       connectBtn.textContent = 'Disconnect';
@@ -452,8 +508,27 @@
     }
   }
 
+  /************************************************************
+   * DEBUG LOGGING (visible in page), plus console.log
+   ************************************************************/
+  function logDebug(msg) {
+    console.log(msg);
+    const line = document.createElement('div');
+    line.textContent = msg;
+    debugBox.appendChild(line);
+    // limit debug lines
+    while (debugBox.children.length > 50) {
+      debugBox.removeChild(debugBox.firstChild);
+    }
+    debugBox.scrollTop = debugBox.scrollHeight;
+  }
+
+  /************************************************************
+   * BLE CONNECTION LOGIC
+   ************************************************************/
   async function connect() {
     try {
+      // Web Bluetooth device chooser
       device = await navigator.bluetooth.requestDevice({
         filters: [{ namePrefix: 'FiddleStIX_V1' }],
         optionalServices: [UART_SERVICE_UUID]
@@ -470,6 +545,8 @@
       txChar.addEventListener('characteristicvaluechanged', handleNotifications);
 
       setConnectedUI(true);
+      logDebug('Connected to FiddleStIX_V1');
+
     } catch (err) {
       console.error('BLE connect error', err);
       alert('BLE connection failed: ' + err);
@@ -486,15 +563,24 @@
       console.error('BLE disconnect error', err);
     } finally {
       setConnectedUI(false);
+      logDebug('Disconnected');
     }
   }
 
   function onDisconnected() {
     console.log('Device disconnected');
     setConnectedUI(false);
+    logDebug('Device disconnected (GATT)');
   }
 
-  // Buffer for assembling full lines from BLE notifications
+  /************************************************************
+   * RECEIVING TELEMETRY OVER BLE
+   * The device sends ASCII lines:
+   *   TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state\n
+   *
+   * Notifications may contain partial lines, so we accumulate
+   * chunks into rxBuffer and split on '\n'.
+   ************************************************************/
   let rxBuffer = '';
 
   function handleNotifications(event) {
@@ -502,7 +588,7 @@
     const decoder = new TextDecoder('utf-8');
     const chunk = decoder.decode(value);
 
-    // Accumulate into buffer
+    // Append chunk to buffer
     rxBuffer += chunk;
 
     // Process all complete lines
@@ -513,14 +599,18 @@
 
       if (!line) continue;
 
+      // For debugging: see lines in console + debug div
+      logDebug('RX: ' + line);
+
       if (line.startsWith('TEL,')) {
         parseTelemetryLine(line);
       } else {
-        console.log('RX:', line);
+        // Some other message (not used yet)
       }
     }
   }
 
+  // Parse one telemetry line and feed data into graphs + status labels
   function parseTelemetryLine(line) {
     // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
     const parts = line.split(',');
@@ -538,16 +628,24 @@
     const pattern = parseInt(parts[10]);
     const state = parseInt(parts[11]);
 
+    // Push to graphs
     pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
 
+    // Update state labels
     stateLabel.textContent = stateNameFromId(state);
     listLabel.textContent = list.toString();
     patternLabel.textContent = pattern.toString();
+
+    // Keep UI slider + list highlight roughly in sync
     patternSlider.value = pattern;
     patternSliderVal.textContent = pattern.toString();
     highlightActiveList(list);
   }
 
+  /************************************************************
+   * SENDING COMMANDS OVER BLE UART
+   * Commands are one-line ASCII strings ending in '\n'
+   ************************************************************/
   async function sendCommand(str) {
     if (!rxChar) {
       alert('Not connected to device');
@@ -556,12 +654,17 @@
     const data = new TextEncoder().encode(str + '\n');
     try {
       await rxChar.writeValue(data);
+      logDebug('TX: ' + str);
     } catch (err) {
       console.error('sendCommand error', err);
+      logDebug('sendCommand error: ' + err);
     }
   }
 
-  // UI events
+  /************************************************************
+   * UI EVENT HOOKS
+   ************************************************************/
+  // Connect/disconnect toggle button
   connectBtn.addEventListener('click', () => {
     if (device && device.gatt && device.gatt.connected) {
       disconnect();
@@ -570,6 +673,7 @@
     }
   });
 
+  // Control buttons -> send CMD:... lines
   document.querySelectorAll('.controls-grid button').forEach(btn => {
     btn.addEventListener('click', () => {
       const cmd = btn.dataset.cmd;
@@ -577,6 +681,7 @@
     });
   });
 
+  // Pattern slider -> SET:PATTERN:...
   patternSlider.addEventListener('input', () => {
     patternSliderVal.textContent = patternSlider.value;
   });
@@ -584,6 +689,7 @@
     sendCommand(`SET:PATTERN:${patternSlider.value}`);
   });
 
+  // Brightness slider -> SET:BRIGHT:...
   brightSlider.addEventListener('input', () => {
     brightSliderVal.textContent = brightSlider.value;
   });
@@ -591,6 +697,7 @@
     sendCommand(`SET:BRIGHT:${brightSlider.value}`);
   });
 
+  // Shuffle dwell time slider -> SET:SHUFFLE_T:...
   shuffleSlider.addEventListener('input', () => {
     shuffleSliderVal.textContent = shuffleSlider.value;
   });
@@ -598,6 +705,7 @@
     sendCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
   });
 
+  // Boolean flags -> SET:BOOL:...:...
   shuffleFlag.addEventListener('change', () => {
     sendCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
   });
