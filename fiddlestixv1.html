@@ -5,7 +5,6 @@
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Chart.js for graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -175,9 +174,7 @@
 
     <div class="row">
       <label>Lists</label>
-      <div class="list-circles" id="listCircles">
-        <!-- Circles created via JS -->
-      </div>
+      <div class="list-circles" id="listCircles"></div>
     </div>
 
     <div class="row">
@@ -235,16 +232,15 @@
 </main>
 
 <script>
-  // UART UUIDs (Nordic / Adafruit BLE UART)
-  const UART_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX_CHAR_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-  const UART_TX_CHAR_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+  const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
   let device = null;
   let server = null;
   let uartService = null;
-  let rxChar = null; // write
-  let txChar = null; // notify
+  let rxChar = null;
+  let txChar = null;
 
   const connectBtn = document.getElementById('connectBtn');
   const stateLabel = document.getElementById('stateLabel');
@@ -261,13 +257,12 @@
   const powerLockFlag = document.getElementById('powerLockFlag');
   const listCircles = document.getElementById('listCircles');
 
-  // Graph data (approx 600 points ~30s at 20Hz)
   const MAX_POINTS = 600;
   let gyroData = { t: [], gx: [], gy: [], gz: [] };
   let accelData = { t: [], ax: [], ay: [], az: [] };
   let micData = { t: [], mic: [] };
 
-  function trimSeries(arr) {
+  function trimArray(arr) {
     while (arr.length > MAX_POINTS) arr.shift();
   }
 
@@ -276,26 +271,27 @@
     gyroData.gx.push(gx);
     gyroData.gy.push(gy);
     gyroData.gz.push(gz);
+
     accelData.t.push(ms);
     accelData.ax.push(ax);
     accelData.ay.push(ay);
     accelData.az.push(az);
+
     micData.t.push(ms);
     micData.mic.push(mic);
 
-    trimSeries(gyroData.t);
-    trimSeries(gyroData.gx);
-    trimSeries(gyroData.gy);
-    trimSeries(gyroData.gz);
-    trimSeries(accelData.t);
-    trimSeries(accelData.ax);
-    trimSeries(accelData.ay);
-    trimSeries(accelData.az);
-    trimSeries(micData.t);
-    trimSeries(micData.mic);
+    trimArray(gyroData.t);
+    trimArray(gyroData.gx);
+    trimArray(gyroData.gy);
+    trimArray(gyroData.gz);
+    trimArray(accelData.t);
+    trimArray(accelData.ax);
+    trimArray(accelData.ay);
+    trimArray(accelData.az);
+    trimArray(micData.t);
+    trimArray(micData.mic);
   }
 
-  // Chart.js setup
   const gyroCtx = document.getElementById('gyroCanvas').getContext('2d');
   const accelCtx = document.getElementById('accelCanvas').getContext('2d');
   const micCtx = document.getElementById('micCanvas').getContext('2d');
@@ -396,7 +392,6 @@
 
   setInterval(updateCharts, 200);
 
-  // State label helper
   function stateNameFromId(id) {
     switch (id) {
       case 0: return 'OFF';
@@ -411,17 +406,16 @@
     }
   }
 
-  // list colors for UI
   const listColors = [
-    '#ffffff', // WHITE
-    '#ff0000', // RED
-    '#ff7f00', // ORANGE
-    '#ffff00', // YELLOW
-    '#00ff00', // GREEN
-    '#0000ff', // BLUE
-    '#4b0082', // INDIGO
-    '#ee82ee', // VIOLET
-    '#000000'  // BLACK (reserved)
+    '#ffffff',
+    '#ff0000',
+    '#ff7f00',
+    '#ffff00',
+    '#00ff00',
+    '#0000ff',
+    '#4b0082',
+    '#ee82ee',
+    '#000000'
   ];
 
   function buildListCircles() {
@@ -500,24 +494,35 @@
     setConnectedUI(false);
   }
 
+  // Buffer for assembling full lines from BLE notifications
+  let rxBuffer = '';
+
   function handleNotifications(event) {
     const value = event.target.value;
     const decoder = new TextDecoder('utf-8');
-    const text = decoder.decode(value);
-    // Could be multiple lines in one notification:
-    text.split('\n').forEach(line => {
-      line = line.trim();
-      if (!line) return;
-      if (line.startsWith('T,')) {
+    const chunk = decoder.decode(value);
+
+    // Accumulate into buffer
+    rxBuffer += chunk;
+
+    // Process all complete lines
+    let newlineIndex;
+    while ((newlineIndex = rxBuffer.indexOf('\n')) !== -1) {
+      const line = rxBuffer.slice(0, newlineIndex).trim();
+      rxBuffer = rxBuffer.slice(newlineIndex + 1);
+
+      if (!line) continue;
+
+      if (line.startsWith('TEL,')) {
         parseTelemetryLine(line);
       } else {
         console.log('RX:', line);
       }
-    });
+    }
   }
 
   function parseTelemetryLine(line) {
-    // T,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
+    // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
     const parts = line.split(',');
     if (parts.length < 12) return;
 
