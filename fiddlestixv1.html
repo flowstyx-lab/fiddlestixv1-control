@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
       color: #eee;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
     }
@@ -18,93 +22,125 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-    h1 {
-      font-size: 1.2rem;
+    header h1 {
       margin: 0;
+      font-size: 1.2rem;
     }
-    button {
-      padding: 0.4rem 0.8rem;
-      margin: 0.2rem;
-      border-radius: 4px;
+    header button {
+      padding: 0.5rem 1rem;
       border: none;
-      background: #444;
-      color: #eee;
+      border-radius: 999px;
+      background: #0af;
+      color: #000;
+      font-weight: 600;
       cursor: pointer;
     }
-    button:hover {
-      background: #666;
+    header button.connected {
+      background: #0f0;
+      color: #000;
     }
-    button.connected {
-      background: #2a8f2a;
-    }
-    .container {
+    main {
       padding: 1rem;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      grid-gap: 1rem;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 1rem;
     }
-    .card {
-      background: #1b1b1b;
-      border-radius: 8px;
-      padding: 0.8rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    section {
+      background: #181818;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 0 0 1px #222;
     }
-    .card h2 {
+    h2 {
       margin-top: 0;
       font-size: 1rem;
-      border-bottom: 1px solid #333;
-      padding-bottom: 0.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #aaa;
     }
-    .btn-row {
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.5rem;
+    }
+    .controls-grid button {
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: none;
+      background: #333;
+      color: #eee;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .controls-grid button:hover {
+      background: #444;
+    }
+    .row {
       display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
     label {
       font-size: 0.85rem;
+      color: #bbb;
+      min-width: 90px;
     }
     input[type="range"] {
-      width: 100%;
+      flex: 1;
     }
-    .list-colors {
+    .value {
+      min-width: 2.5rem;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+    .list-circles {
       display: flex;
+      gap: 0.4rem;
       flex-wrap: wrap;
-      gap: 0.3rem;
-      margin-top: 0.5rem;
     }
-    .list-dot {
+    .list-circle {
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      border: 2px solid #444;
+      border: 2px solid transparent;
       cursor: pointer;
-      box-sizing: border-box;
+      box-shadow: 0 0 0 1px #333;
     }
-    .list-dot.active {
+    .list-circle.active {
       border-color: #fff;
-      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+      box-shadow: 0 0 0 2px #0af;
+    }
+    .bool-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.3rem;
+      font-size: 0.85rem;
+    }
+    .graphs {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
     }
     canvas {
-      width: 100%;
-      height: 120px;
       background: #000;
-      border-radius: 4px;
+      border-radius: 8px;
     }
     .status-line {
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.5rem;
     }
-    .toggle-btn {
-      background: #444;
-    }
-    .toggle-btn.on {
-      background: #2a8f2a;
-    }
-    .field-line {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      margin-top: 0.2rem;
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -114,140 +150,269 @@
   <button id="connectBtn">Connect</button>
 </header>
 
-<div class="container">
-  <!-- Transport controls -->
-  <div class="card">
-    <h2>Playback & Control</h2>
-    <div class="btn-row">
-      <button id="prevPageBtn">Previous Page</button>
-      <button id="nextPageBtn">Next Page</button>
-      <button id="prevPatternBtn">Previous Pattern</button>
-      <button id="nextPatternBtn">Next Pattern</button>
-    </div>
-    <div class="btn-row">
-      <button id="favoriteBtn">Favorite</button>
-      <button id="sleepBtn">Go To Sleep</button>
-      <button id="raveBtn">Rave O'Clock</button>
-    </div>
+<main>
+  <section id="controlSection">
+    <h2>Controls</h2>
+
     <div class="status-line">
-      List: <span id="listLabel">?</span> |
-      Pattern: <span id="patternLabel">?</span> |
-      State: <span id="stateLabel">?</span>
+      Device state:
+      <span id="stateLabel">Unknown</span> ·
+      List: <span id="listLabel">-</span> ·
+      Pattern: <span id="patternLabel">-</span>
     </div>
-  </div>
 
-  <!-- List & pattern selection -->
-  <div class="card">
-    <h2>List & Pattern Selection</h2>
-    <label>Lists:</label>
-    <div class="list-colors" id="listDots">
-      <!-- Populated in JS -->
+    <div class="controls-grid">
+      <button data-cmd="CMD:PREV_LIST">Previous Page</button>
+      <button data-cmd="CMD:NEXT_LIST">Next Page</button>
+      <button data-cmd="CMD:PREV_PATTERN">Previous Pattern</button>
+      <button data-cmd="CMD:NEXT_PATTERN">Next Pattern</button>
+      <button data-cmd="CMD:FAVORITE">Favorite</button>
+      <button data-cmd="CMD:GO_SLEEP">Go To Sleep</button>
+      <button data-cmd="CMD:RAVE">Rave O'Clock</button>
     </div>
-    <div style="margin-top:0.8rem;">
-      <label for="patternSlider">Pattern Index</label>
-      <input type="range" id="patternSlider" min="0" max="4" value="0">
-      <div class="field-line">
-        <span>0</span><span>4</span>
+
+    <hr style="border: none; border-top: 1px solid #333; margin: 1rem 0;">
+
+    <div class="row">
+      <label>Lists</label>
+      <div class="list-circles" id="listCircles">
+        <!-- Circles created via JS -->
       </div>
-      <button id="setPatternBtn" style="margin-top:0.4rem;">Set Pattern</button>
-    </div>
-  </div>
-
-  <!-- Settings -->
-  <div class="card">
-    <h2>Settings</h2>
-    <label for="brightnessSlider">Global Brightness</label>
-    <input type="range" id="brightnessSlider" min="0" max="7" value="7">
-    <div class="field-line">
-      <span>10%</span><span>100%</span>
     </div>
 
-    <label for="shuffleSlider" style="margin-top:0.8rem; display:block;">Shuffle Dwell (ms)</label>
-    <input type="range" id="shuffleSlider" min="200" max="10000" step="100" value="2000">
-    <div class="field-line">
-      <span>200</span><span>10000</span>
+    <div class="row">
+      <label>Pattern #</label>
+      <input type="range" id="patternSlider" min="0" max="99" value="0">
+      <span class="value" id="patternSliderVal">0</span>
     </div>
 
-    <div style="margin-top:0.8rem;">
-      <button class="toggle-btn" id="toggleSleepTimerBtn">Sleep Timer</button>
-      <button class="toggle-btn" id="togglePowerLockBtn">Power Lock</button>
-      <button class="toggle-btn" id="toggleShuffleBtn">Shuffle</button>
+    <div class="row">
+      <label>Brightness</label>
+      <input type="range" id="brightSlider" min="0" max="7" value="7">
+      <span class="value" id="brightSliderVal">7</span>
     </div>
-  </div>
 
-  <!-- Graphs: Gyro, Accel, Mic -->
-  <div class="card">
-    <h2>Gyro</h2>
-    <canvas id="gyroCanvas" width="300" height="120"></canvas>
-  </div>
+    <div class="row">
+      <label>Shuffle T (ms)</label>
+      <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="5000">
+      <span class="value" id="shuffleSliderVal">5000</span>
+    </div>
 
-  <div class="card">
-    <h2>Acceleration</h2>
-    <canvas id="accelCanvas" width="300" height="120"></canvas>
-  </div>
+    <div>
+      <h2>Flags</h2>
+      <div class="bool-toggle">
+        <input type="checkbox" id="shuffleFlag">
+        <label for="shuffleFlag">Shuffle (shuffle_P)</label>
+      </div>
+      <div class="bool-toggle">
+        <input type="checkbox" id="sleepTimerFlag" checked>
+        <label for="sleepTimerFlag">Sleep Timer</label>
+      </div>
+      <div class="bool-toggle">
+        <input type="checkbox" id="powerLockFlag">
+        <label for="powerLockFlag">Power Lock</label>
+      </div>
+    </div>
+  </section>
 
-  <div class="card">
-    <h2>Mic Level</h2>
-    <canvas id="micCanvas" width="300" height="120"></canvas>
-  </div>
-</div>
+  <section id="graphsSection">
+    <h2>Sensor Graphs (last ~30s)</h2>
+    <div class="graphs">
+      <div>
+        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
+        <canvas id="gyroCanvas" height="120"></canvas>
+      </div>
+      <div>
+        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Accel (ax, ay, az)</div>
+        <canvas id="accelCanvas" height="120"></canvas>
+      </div>
+      <div>
+        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Mic Level</div>
+        <canvas id="micCanvas" height="120"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
 
 <script>
-  // BLE UUIDs for Nordic UART (Adafruit Bluefruit style)
-  const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-  const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+  // UART UUIDs (Nordic / Adafruit BLE UART)
+  const UART_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX_CHAR_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+  const UART_TX_CHAR_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
 
-  let device, server, uartService, rxCharacteristic, txCharacteristic;
-  let connected = false;
+  let device = null;
+  let server = null;
+  let uartService = null;
+  let rxChar = null; // write
+  let txChar = null; // notify
 
   const connectBtn = document.getElementById('connectBtn');
-  const prevPageBtn = document.getElementById('prevPageBtn');
-  const nextPageBtn = document.getElementById('nextPageBtn');
-  const prevPatternBtn = document.getElementById('prevPatternBtn');
-  const nextPatternBtn = document.getElementById('nextPatternBtn');
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  const sleepBtn = document.getElementById('sleepBtn');
-  const raveBtn = document.getElementById('raveBtn');
-
+  const stateLabel = document.getElementById('stateLabel');
   const listLabel = document.getElementById('listLabel');
   const patternLabel = document.getElementById('patternLabel');
-  const stateLabel = document.getElementById('stateLabel');
-
-  const listDotsContainer = document.getElementById('listDots');
   const patternSlider = document.getElementById('patternSlider');
-  const setPatternBtn = document.getElementById('setPatternBtn');
-
-  const brightnessSlider = document.getElementById('brightnessSlider');
+  const patternSliderVal = document.getElementById('patternSliderVal');
+  const brightSlider = document.getElementById('brightSlider');
+  const brightSliderVal = document.getElementById('brightSliderVal');
   const shuffleSlider = document.getElementById('shuffleSlider');
+  const shuffleSliderVal = document.getElementById('shuffleSliderVal');
+  const shuffleFlag = document.getElementById('shuffleFlag');
+  const sleepTimerFlag = document.getElementById('sleepTimerFlag');
+  const powerLockFlag = document.getElementById('powerLockFlag');
+  const listCircles = document.getElementById('listCircles');
 
-  const toggleSleepTimerBtn = document.getElementById('toggleSleepTimerBtn');
-  const togglePowerLockBtn = document.getElementById('togglePowerLockBtn');
-  const toggleShuffleBtn = document.getElementById('toggleShuffleBtn');
+  // Graph data (approx 600 points ~30s at 20Hz)
+  const MAX_POINTS = 600;
+  let gyroData = { t: [], gx: [], gy: [], gz: [] };
+  let accelData = { t: [], ax: [], ay: [], az: [] };
+  let micData = { t: [], mic: [] };
 
-  // Graphs
-  const gyroCanvas = document.getElementById('gyroCanvas');
-  const accelCanvas = document.getElementById('accelCanvas');
-  const micCanvas = document.getElementById('micCanvas');
+  function trimSeries(arr) {
+    while (arr.length > MAX_POINTS) arr.shift();
+  }
 
-  const gyroCtx = gyroCanvas.getContext('2d');
-  const accelCtx = accelCanvas.getContext('2d');
-  const micCtx = micCanvas.getContext('2d');
+  function pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
+    gyroData.t.push(ms);
+    gyroData.gx.push(gx);
+    gyroData.gy.push(gy);
+    gyroData.gz.push(gz);
+    accelData.t.push(ms);
+    accelData.ax.push(ax);
+    accelData.ay.push(ay);
+    accelData.az.push(az);
+    micData.t.push(ms);
+    micData.mic.push(mic);
 
-  let gyroData = [];
-  let accelData = [];
-  let micData = [];
-  const MAX_POINTS = 200;
+    trimSeries(gyroData.t);
+    trimSeries(gyroData.gx);
+    trimSeries(gyroData.gy);
+    trimSeries(gyroData.gz);
+    trimSeries(accelData.t);
+    trimSeries(accelData.ax);
+    trimSeries(accelData.ay);
+    trimSeries(accelData.az);
+    trimSeries(micData.t);
+    trimSeries(micData.mic);
+  }
 
-  let currentList = 0;
-  let currentPattern = 0;
-  let currentState = 0;
+  // Chart.js setup
+  const gyroCtx = document.getElementById('gyroCanvas').getContext('2d');
+  const accelCtx = document.getElementById('accelCanvas').getContext('2d');
+  const micCtx = document.getElementById('micCanvas').getContext('2d');
 
-  const LIST_NAMES = [
-    'WHITE','RED','ORANGE','YELLOW','GREEN','BLUE','INDIGO','VIOLET','BLACK'
-  ];
+  const gyroChart = new Chart(gyroCtx, {
+    type: 'line',
+    data: {
+      labels: gyroData.t,
+      datasets: [
+        { label: 'gx', data: gyroData.gx, borderWidth: 1, pointRadius: 0 },
+        { label: 'gy', data: gyroData.gy, borderWidth: 1, pointRadius: 0 },
+        { label: 'gz', data: gyroData.gz, borderWidth: 1, pointRadius: 0 }
+      ]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#aaa' },
+          grid: { color: '#333' }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#aaa' } }
+      }
+    }
+  });
 
-  const LIST_COLORS = [
+  const accelChart = new Chart(accelCtx, {
+    type: 'line',
+    data: {
+      labels: accelData.t,
+      datasets: [
+        { label: 'ax', data: accelData.ax, borderWidth: 1, pointRadius: 0 },
+        { label: 'ay', data: accelData.ay, borderWidth: 1, pointRadius: 0 },
+        { label: 'az', data: accelData.az, borderWidth: 1, pointRadius: 0 }
+      ]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#aaa' },
+          grid: { color: '#333' }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#aaa' } }
+      }
+    }
+  });
+
+  const micChart = new Chart(micCtx, {
+    type: 'line',
+    data: {
+      labels: micData.t,
+      datasets: [
+        { label: 'mic', data: micData.mic, borderWidth: 1, pointRadius: 0 }
+      ]
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#aaa' },
+          grid: { color: '#333' }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#aaa' } }
+      }
+    }
+  });
+
+  function updateCharts() {
+    gyroChart.data.labels = gyroData.t;
+    gyroChart.data.datasets[0].data = gyroData.gx;
+    gyroChart.data.datasets[1].data = gyroData.gy;
+    gyroChart.data.datasets[2].data = gyroData.gz;
+    gyroChart.update('none');
+
+    accelChart.data.labels = accelData.t;
+    accelChart.data.datasets[0].data = accelData.ax;
+    accelChart.data.datasets[1].data = accelData.ay;
+    accelChart.data.datasets[2].data = accelData.az;
+    accelChart.update('none');
+
+    micChart.data.labels = micData.t;
+    micChart.data.datasets[0].data = micData.mic;
+    micChart.update('none');
+  }
+
+  setInterval(updateCharts, 200);
+
+  // State label helper
+  function stateNameFromId(id) {
+    switch (id) {
+      case 0: return 'OFF';
+      case 1: return 'PLAY';
+      case 2: return 'SLEEP';
+      case 3: return 'SHUFFLE';
+      case 4: return 'PAIRING';
+      case 5: return 'L_SELECT';
+      case 6: return 'B_SELECT';
+      case 7: return 'T_SELECT';
+      default: return '?';
+    }
+  }
+
+  // list colors for UI
+  const listColors = [
     '#ffffff', // WHITE
     '#ff0000', // RED
     '#ff7f00', // ORANGE
@@ -255,12 +420,42 @@
     '#00ff00', // GREEN
     '#0000ff', // BLUE
     '#4b0082', // INDIGO
-    '#8f00ff', // VIOLET
-    '#000000'  // BLACK
+    '#ee82ee', // VIOLET
+    '#000000'  // BLACK (reserved)
   ];
 
-  function log(msg) {
-    console.log('[FiddleStIX]', msg);
+  function buildListCircles() {
+    listCircles.innerHTML = '';
+    listColors.forEach((color, idx) => {
+      const div = document.createElement('div');
+      div.className = 'list-circle';
+      div.style.background = color;
+      div.title = `List ${idx}`;
+      div.dataset.listIndex = idx.toString();
+      div.addEventListener('click', () => {
+        sendCommand(`SET:LIST:${idx}`);
+        highlightActiveList(idx);
+      });
+      listCircles.appendChild(div);
+    });
+  }
+
+  function highlightActiveList(idx) {
+    Array.from(listCircles.children).forEach((child, i) => {
+      child.classList.toggle('active', i === idx);
+    });
+  }
+
+  buildListCircles();
+
+  function setConnectedUI(connected) {
+    if (connected) {
+      connectBtn.textContent = 'Disconnect';
+      connectBtn.classList.add('connected');
+    } else {
+      connectBtn.textContent = 'Connect';
+      connectBtn.classList.remove('connected');
+    }
   }
 
   async function connect() {
@@ -269,205 +464,144 @@
         filters: [{ namePrefix: 'FiddleStIX_V1' }],
         optionalServices: [UART_SERVICE_UUID]
       });
+
       device.addEventListener('gattserverdisconnected', onDisconnected);
+
       server = await device.gatt.connect();
       uartService = await server.getPrimaryService(UART_SERVICE_UUID);
-      rxCharacteristic = await uartService.getCharacteristic(UART_RX_UUID);
-      txCharacteristic = await uartService.getCharacteristic(UART_TX_UUID);
-      await txCharacteristic.startNotifications();
-      txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-      connected = true;
-      connectBtn.textContent = 'Connected';
-      connectBtn.classList.add('connected');
-      log('Connected to device');
-    } catch (error) {
-      console.error(error);
-      alert('Connection failed: ' + error);
+      rxChar = await uartService.getCharacteristic(UART_RX_CHAR_UUID);
+      txChar = await uartService.getCharacteristic(UART_TX_CHAR_UUID);
+
+      await txChar.startNotifications();
+      txChar.addEventListener('characteristicvaluechanged', handleNotifications);
+
+      setConnectedUI(true);
+    } catch (err) {
+      console.error('BLE connect error', err);
+      alert('BLE connection failed: ' + err);
+      setConnectedUI(false);
+    }
+  }
+
+  async function disconnect() {
+    try {
+      if (device && device.gatt.connected) {
+        await device.gatt.disconnect();
+      }
+    } catch (err) {
+      console.error('BLE disconnect error', err);
+    } finally {
+      setConnectedUI(false);
     }
   }
 
   function onDisconnected() {
-    connected = false;
-    connectBtn.textContent = 'Connect';
-    connectBtn.classList.remove('connected');
-    log('Disconnected');
-  }
-
-  async function sendCommand(str) {
-    if (!connected || !rxCharacteristic) {
-      alert('Not connected');
-      return;
-    }
-    const enc = new TextEncoder();
-    const data = enc.encode(str + '\n');
-    try {
-      await rxCharacteristic.writeValue(data);
-    } catch (e) {
-      console.error('write error', e);
-    }
+    console.log('Device disconnected');
+    setConnectedUI(false);
   }
 
   function handleNotifications(event) {
-    const decoder = new TextDecoder();
-    const text = decoder.decode(event.target.value);
-    // data may contain multiple lines
-    const lines = text.split('\n');
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const obj = JSON.parse(line);
-        handleTelemetry(obj);
-      } catch (e) {
-        // not JSON, ignore
+    const value = event.target.value;
+    const decoder = new TextDecoder('utf-8');
+    const text = decoder.decode(value);
+    // Could be multiple lines in one notification:
+    text.split('\n').forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      if (line.startsWith('T,')) {
+        parseTelemetryLine(line);
+      } else {
+        console.log('RX:', line);
       }
-    }
-  }
-
-  function handleTelemetry(t) {
-    if (typeof t.list === 'number') {
-      currentList = t.list;
-      updateListUI();
-    }
-    if (typeof t.pattern === 'number') {
-      currentPattern = t.pattern;
-      patternSlider.value = currentPattern;
-      patternLabel.textContent = currentPattern.toString();
-    }
-    if (typeof t.state === 'number') {
-      currentState = t.state;
-      stateLabel.textContent = currentState.toString();
-    }
-
-    // magnitude values for graphs
-    if (typeof t.gx === 'number' && typeof t.gy === 'number' && typeof t.gz === 'number') {
-      const gmag = Math.sqrt(t.gx*t.gx + t.gy*t.gy + t.gz*t.gz);
-      addDataPoint(gyroData, gmag);
-      drawGraph(gyroCtx, gyroCanvas, gyroData, 'Gyro');
-    }
-    if (typeof t.ax === 'number' && typeof t.ay === 'number' && typeof t.az === 'number') {
-      const amag = Math.sqrt(t.ax*t.ax + t.ay*t.ay + t.az*t.az);
-      addDataPoint(accelData, amag);
-      drawGraph(accelCtx, accelCanvas, accelData, 'Accel');
-    }
-    if (typeof t.mic === 'number') {
-      addDataPoint(micData, t.mic);
-      drawGraph(micCtx, micCanvas, micData, 'Mic');
-    }
-
-    listLabel.textContent = LIST_NAMES[currentList] || currentList.toString();
-  }
-
-  function addDataPoint(arr, val) {
-    arr.push(val);
-    if (arr.length > MAX_POINTS) arr.shift();
-  }
-
-  function drawGraph(ctx, canvas, data, label) {
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
-
-    if (data.length < 2) return;
-
-    const maxVal = Math.max(...data) || 1;
-    const minVal = Math.min(...data) || 0;
-    const range = (maxVal - minVal) || 1;
-
-    ctx.beginPath();
-    ctx.strokeStyle = '#00ff88';
-    ctx.lineWidth = 1;
-    const step = w / (MAX_POINTS - 1);
-    data.forEach((v, i) => {
-      const x = i * step;
-      const y = h - ((v - minVal) / range) * h;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
     });
-    ctx.stroke();
-
-    ctx.fillStyle = '#888';
-    ctx.font = '10px system-ui';
-    ctx.fillText(label, 4, 12);
   }
 
-  function updateListUI() {
-    const dots = listDotsContainer.querySelectorAll('.list-dot');
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === currentList);
-    });
-    listLabel.textContent = LIST_NAMES[currentList] || currentList.toString();
-    patternLabel.textContent = currentPattern.toString();
+  function parseTelemetryLine(line) {
+    // T,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
+    const parts = line.split(',');
+    if (parts.length < 12) return;
+
+    const ms = parseInt(parts[1]);
+    const ax = parseFloat(parts[2]);
+    const ay = parseFloat(parts[3]);
+    const az = parseFloat(parts[4]);
+    const gx = parseFloat(parts[5]);
+    const gy = parseFloat(parts[6]);
+    const gz = parseFloat(parts[7]);
+    const mic = parseFloat(parts[8]);
+    const list = parseInt(parts[9]);
+    const pattern = parseInt(parts[10]);
+    const state = parseInt(parts[11]);
+
+    pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
+
+    stateLabel.textContent = stateNameFromId(state);
+    listLabel.textContent = list.toString();
+    patternLabel.textContent = pattern.toString();
+    patternSlider.value = pattern;
+    patternSliderVal.textContent = pattern.toString();
+    highlightActiveList(list);
   }
 
-  // Build list color dots
-  function initListDots() {
-    LIST_COLORS.forEach((col, idx) => {
-      const div = document.createElement('div');
-      div.className = 'list-dot';
-      div.style.backgroundColor = col;
-      div.title = LIST_NAMES[idx];
-      div.addEventListener('click', () => {
-        currentList = idx;
-        updateListUI();
-        sendCommand(`CMD:SET_PATTERN:${currentList},${currentPattern}`);
-      });
-      listDotsContainer.appendChild(div);
-    });
-    updateListUI();
+  async function sendCommand(str) {
+    if (!rxChar) {
+      alert('Not connected to device');
+      return;
+    }
+    const data = new TextEncoder().encode(str + '\n');
+    try {
+      await rxChar.writeValue(data);
+    } catch (err) {
+      console.error('sendCommand error', err);
+    }
   }
 
-  // Event handlers
+  // UI events
   connectBtn.addEventListener('click', () => {
-    if (!connected) {
+    if (device && device.gatt && device.gatt.connected) {
+      disconnect();
+    } else {
       connect();
-    } else if (device && device.gatt.connected) {
-      device.gatt.disconnect();
     }
   });
 
-  prevPageBtn.addEventListener('click', () => sendCommand('CMD:PREV_LIST'));
-  nextPageBtn.addEventListener('click', () => sendCommand('CMD:NEXT_LIST'));
-  prevPatternBtn.addEventListener('click', () => sendCommand('CMD:PREV_PATTERN'));
-  nextPatternBtn.addEventListener('click', () => sendCommand('CMD:NEXT_PATTERN'));
-  favoriteBtn.addEventListener('click', () => sendCommand('CMD:FAVORITE'));
-  sleepBtn.addEventListener('click', () => sendCommand('CMD:SLEEP'));
-  raveBtn.addEventListener('click', () => sendCommand('CMD:RAVE'));
-
-  setPatternBtn.addEventListener('click', () => {
-    currentPattern = parseInt(patternSlider.value, 10);
-    patternLabel.textContent = currentPattern.toString();
-    sendCommand(`CMD:SET_PATTERN:${currentList},${currentPattern}`);
+  document.querySelectorAll('.controls-grid button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      if (cmd) sendCommand(cmd);
+    });
   });
 
-  brightnessSlider.addEventListener('change', () => {
-    const val = parseInt(brightnessSlider.value, 10);
-    sendCommand(`CMD:SET_BRIGHT:${val}`);
+  patternSlider.addEventListener('input', () => {
+    patternSliderVal.textContent = patternSlider.value;
+  });
+  patternSlider.addEventListener('change', () => {
+    sendCommand(`SET:PATTERN:${patternSlider.value}`);
   });
 
+  brightSlider.addEventListener('input', () => {
+    brightSliderVal.textContent = brightSlider.value;
+  });
+  brightSlider.addEventListener('change', () => {
+    sendCommand(`SET:BRIGHT:${brightSlider.value}`);
+  });
+
+  shuffleSlider.addEventListener('input', () => {
+    shuffleSliderVal.textContent = shuffleSlider.value;
+  });
   shuffleSlider.addEventListener('change', () => {
-    const val = parseInt(shuffleSlider.value, 10);
-    sendCommand(`CMD:SET_SHUF_T:${val}`);
+    sendCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
   });
 
-  toggleSleepTimerBtn.addEventListener('click', () => {
-    toggleSleepTimerBtn.classList.toggle('on');
-    sendCommand('CMD:TOGGLE:sleepTimer');
+  shuffleFlag.addEventListener('change', () => {
+    sendCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
   });
-
-  togglePowerLockBtn.addEventListener('click', () => {
-    togglePowerLockBtn.classList.toggle('on');
-    sendCommand('CMD:TOGGLE:powerLock');
+  sleepTimerFlag.addEventListener('change', () => {
+    sendCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
   });
-
-  toggleShuffleBtn.addEventListener('click', () => {
-    toggleShuffleBtn.classList.toggle('on');
-    sendCommand('CMD:TOGGLE:shuffle_P');
+  powerLockFlag.addEventListener('change', () => {
+    sendCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
   });
-
-  // Init
-  initListDots();
 </script>
 </body>
 </html>
