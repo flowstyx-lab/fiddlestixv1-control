@@ -2,398 +2,472 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FiddleStIX V1 Controller</title>
+  <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Chart.js from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body {
       background: #111;
       color: #eee;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      padding: 1rem;
+      background: #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     h1 {
-      margin-top: 0;
-      font-size: 1.6rem;
+      font-size: 1.2rem;
+      margin: 0;
     }
     button {
-      margin: 4px;
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 0.4rem 0.8rem;
+      margin: 0.2rem;
+      border-radius: 4px;
       border: none;
-      background: #2c7be5;
-      color: white;
-      font-weight: 500;
+      background: #444;
+      color: #eee;
       cursor: pointer;
     }
-    button:disabled {
-      background: #444;
-      cursor: not-allowed;
+    button:hover {
+      background: #666;
     }
-    .section {
-      margin-bottom: 18px;
-      padding: 10px;
-      border-radius: 8px;
+    button.connected {
+      background: #2a8f2a;
+    }
+    .container {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-gap: 1rem;
+    }
+    .card {
       background: #1b1b1b;
+      border-radius: 8px;
+      padding: 0.8rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
-    .controls-row {
+    .card h2 {
+      margin-top: 0;
+      font-size: 1rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.3rem;
+    }
+    .btn-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
     }
-    .slider-row {
-      display: flex;
-      flex-direction: column;
-      margin: 6px 0;
+    label {
+      font-size: 0.85rem;
     }
     input[type="range"] {
       width: 100%;
     }
-    label {
-      font-size: 0.9rem;
-    }
-    .bools {
+    .list-colors {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 6px;
+      gap: 0.3rem;
+      margin-top: 0.5rem;
+    }
+    .list-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #444;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .list-dot.active {
+      border-color: #fff;
+      box-shadow: 0 0 4px rgba(255,255,255,0.8);
     }
     canvas {
+      width: 100%;
+      height: 120px;
       background: #000;
       border-radius: 4px;
-      margin-top: 8px;
     }
-    .status {
-      font-size: 0.85rem;
-      color: #ccc;
-      margin-top: 4px;
+    .status-line {
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .toggle-btn {
+      background: #444;
+    }
+    .toggle-btn.on {
+      background: #2a8f2a;
+    }
+    .field-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-top: 0.2rem;
     }
   </style>
 </head>
 <body>
-  <h1>FiddleStIX V1 – Web Bluetooth Controller</h1>
+<header>
+  <h1>FiddleStIX V1 Control</h1>
+  <button id="connectBtn">Connect</button>
+</header>
 
-  <div class="section">
-    <button id="connectBtn">Connect</button>
-    <span id="status" class="status">Not connected</span>
-  </div>
-
-  <div class="section">
-    <h2>Playback Controls</h2>
-    <div class="controls-row">
-      <button id="prevPageBtn" disabled>Previous Page</button>
-      <button id="nextPageBtn" disabled>Next Page</button>
-      <button id="prevPatternBtn" disabled>Previous Pattern</button>
-      <button id="nextPatternBtn" disabled>Next Pattern</button>
-      <button id="favBtn" disabled>Favorite</button>
-      <button id="sleepBtn" disabled>Go To Sleep</button>
-      <button id="raveBtn" disabled>Rave O’Clock</button>
+<div class="container">
+  <!-- Transport controls -->
+  <div class="card">
+    <h2>Playback & Control</h2>
+    <div class="btn-row">
+      <button id="prevPageBtn">Previous Page</button>
+      <button id="nextPageBtn">Next Page</button>
+      <button id="prevPatternBtn">Previous Pattern</button>
+      <button id="nextPatternBtn">Next Pattern</button>
+    </div>
+    <div class="btn-row">
+      <button id="favoriteBtn">Favorite</button>
+      <button id="sleepBtn">Go To Sleep</button>
+      <button id="raveBtn">Rave O'Clock</button>
+    </div>
+    <div class="status-line">
+      List: <span id="listLabel">?</span> |
+      Pattern: <span id="patternLabel">?</span> |
+      State: <span id="stateLabel">?</span>
     </div>
   </div>
 
-  <div class="section">
+  <!-- List & pattern selection -->
+  <div class="card">
+    <h2>List & Pattern Selection</h2>
+    <label>Lists:</label>
+    <div class="list-colors" id="listDots">
+      <!-- Populated in JS -->
+    </div>
+    <div style="margin-top:0.8rem;">
+      <label for="patternSlider">Pattern Index</label>
+      <input type="range" id="patternSlider" min="0" max="4" value="0">
+      <div class="field-line">
+        <span>0</span><span>4</span>
+      </div>
+      <button id="setPatternBtn" style="margin-top:0.4rem;">Set Pattern</button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="card">
     <h2>Settings</h2>
-    <div class="slider-row">
-      <label for="brightnessSlider">
-        Global Brightness (0–7, maps to 10–100%): <span id="brightnessLabel">3</span>
-      </label>
-      <input type="range" id="brightnessSlider" min="0" max="7" value="3">
+    <label for="brightnessSlider">Global Brightness</label>
+    <input type="range" id="brightnessSlider" min="0" max="7" value="7">
+    <div class="field-line">
+      <span>10%</span><span>100%</span>
     </div>
-    <div class="slider-row">
-      <label for="shuffleSlider">
-        Shuffle dwell time (seconds, 1–60): <span id="shuffleLabel">5</span>
-      </label>
-      <input type="range" id="shuffleSlider" min="1" max="60" value="5">
-    </div>
-    <div class="bools">
-      <label><input type="checkbox" id="shufflePChk"> shuffle_P</label>
-      <label><input type="checkbox" id="sleepTimerChk" checked> sleepTimer</label>
-      <label><input type="checkbox" id="powerLockChk"> powerLock</label>
-    </div>
-  </div>
 
-  <div class="section">
-    <h2>IMU & Mic Telemetry</h2>
-    <p class="status">Live graphs of accelerometer, gyroscope, and mic-level data coming from the device.</p>
-    <div>
-      <h3>Gyro (deg/s)</h3>
-      <canvas id="gyroChart" height="140"></canvas>
+    <label for="shuffleSlider" style="margin-top:0.8rem; display:block;">Shuffle Dwell (ms)</label>
+    <input type="range" id="shuffleSlider" min="200" max="10000" step="100" value="2000">
+    <div class="field-line">
+      <span>200</span><span>10000</span>
     </div>
-    <div>
-      <h3>Accel (g or m/s²)</h3>
-      <canvas id="accelChart" height="140"></canvas>
-    </div>
-    <div>
-      <h3>Mic Level</h3>
-      <canvas id="micChart" height="120"></canvas>
+
+    <div style="margin-top:0.8rem;">
+      <button class="toggle-btn" id="toggleSleepTimerBtn">Sleep Timer</button>
+      <button class="toggle-btn" id="togglePowerLockBtn">Power Lock</button>
+      <button class="toggle-btn" id="toggleShuffleBtn">Shuffle</button>
     </div>
   </div>
 
-  <script>
-    // Nordic UART Service UUIDs (Bluefruit / Adafruit / nRF52)
-    // These are standard for BLE UART over NUS.
-    const NUS_SERVICE_UUID       = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const NUS_CHAR_RX_UUID       = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // from browser to device
-    const NUS_CHAR_TX_UUID       = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // from device to browser
+  <!-- Graphs: Gyro, Accel, Mic -->
+  <div class="card">
+    <h2>Gyro</h2>
+    <canvas id="gyroCanvas" width="300" height="120"></canvas>
+  </div>
 
-    let bleDevice = null;
-    let nusService = null;
-    let rxCharacteristic = null;
-    let txCharacteristic = null;
+  <div class="card">
+    <h2>Acceleration</h2>
+    <canvas id="accelCanvas" width="300" height="120"></canvas>
+  </div>
 
-    let isConnected = false;
+  <div class="card">
+    <h2>Mic Level</h2>
+    <canvas id="micCanvas" width="300" height="120"></canvas>
+  </div>
+</div>
 
-    const connectBtn      = document.getElementById('connectBtn');
-    const statusSpan      = document.getElementById('status');
-    const prevPageBtn     = document.getElementById('prevPageBtn');
-    const nextPageBtn     = document.getElementById('nextPageBtn');
-    const prevPatternBtn  = document.getElementById('prevPatternBtn');
-    const nextPatternBtn  = document.getElementById('nextPatternBtn');
-    const favBtn          = document.getElementById('favBtn');
-    const sleepBtn        = document.getElementById('sleepBtn');
-    const raveBtn         = document.getElementById('raveBtn');
+<script>
+  // BLE UUIDs for Nordic UART (Adafruit Bluefruit style)
+  const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+  const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
 
-    const brightnessSlider = document.getElementById('brightnessSlider');
-    const brightnessLabel  = document.getElementById('brightnessLabel');
-    const shuffleSlider    = document.getElementById('shuffleSlider');
-    const shuffleLabel     = document.getElementById('shuffleLabel');
+  let device, server, uartService, rxCharacteristic, txCharacteristic;
+  let connected = false;
 
-    const shufflePChk    = document.getElementById('shufflePChk');
-    const sleepTimerChk  = document.getElementById('sleepTimerChk');
-    const powerLockChk   = document.getElementById('powerLockChk');
+  const connectBtn = document.getElementById('connectBtn');
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  const nextPageBtn = document.getElementById('nextPageBtn');
+  const prevPatternBtn = document.getElementById('prevPatternBtn');
+  const nextPatternBtn = document.getElementById('nextPatternBtn');
+  const favoriteBtn = document.getElementById('favoriteBtn');
+  const sleepBtn = document.getElementById('sleepBtn');
+  const raveBtn = document.getElementById('raveBtn');
 
-    function setUiConnected(connected) {
-      isConnected = connected;
-      connectBtn.textContent = connected ? 'Disconnect' : 'Connect';
-      prevPageBtn.disabled    = !connected;
-      nextPageBtn.disabled    = !connected;
-      prevPatternBtn.disabled = !connected;
-      nextPatternBtn.disabled = !connected;
-      favBtn.disabled         = !connected;
-      sleepBtn.disabled       = !connected;
-      raveBtn.disabled        = !connected;
-      brightnessSlider.disabled = !connected;
-      shuffleSlider.disabled    = !connected;
-      shufflePChk.disabled      = !connected;
-      sleepTimerChk.disabled    = !connected;
-      powerLockChk.disabled     = !connected;
-      statusSpan.textContent = connected ? 'Connected' : 'Not connected';
+  const listLabel = document.getElementById('listLabel');
+  const patternLabel = document.getElementById('patternLabel');
+  const stateLabel = document.getElementById('stateLabel');
+
+  const listDotsContainer = document.getElementById('listDots');
+  const patternSlider = document.getElementById('patternSlider');
+  const setPatternBtn = document.getElementById('setPatternBtn');
+
+  const brightnessSlider = document.getElementById('brightnessSlider');
+  const shuffleSlider = document.getElementById('shuffleSlider');
+
+  const toggleSleepTimerBtn = document.getElementById('toggleSleepTimerBtn');
+  const togglePowerLockBtn = document.getElementById('togglePowerLockBtn');
+  const toggleShuffleBtn = document.getElementById('toggleShuffleBtn');
+
+  // Graphs
+  const gyroCanvas = document.getElementById('gyroCanvas');
+  const accelCanvas = document.getElementById('accelCanvas');
+  const micCanvas = document.getElementById('micCanvas');
+
+  const gyroCtx = gyroCanvas.getContext('2d');
+  const accelCtx = accelCanvas.getContext('2d');
+  const micCtx = micCanvas.getContext('2d');
+
+  let gyroData = [];
+  let accelData = [];
+  let micData = [];
+  const MAX_POINTS = 200;
+
+  let currentList = 0;
+  let currentPattern = 0;
+  let currentState = 0;
+
+  const LIST_NAMES = [
+    'WHITE','RED','ORANGE','YELLOW','GREEN','BLUE','INDIGO','VIOLET','BLACK'
+  ];
+
+  const LIST_COLORS = [
+    '#ffffff', // WHITE
+    '#ff0000', // RED
+    '#ff7f00', // ORANGE
+    '#ffff00', // YELLOW
+    '#00ff00', // GREEN
+    '#0000ff', // BLUE
+    '#4b0082', // INDIGO
+    '#8f00ff', // VIOLET
+    '#000000'  // BLACK
+  ];
+
+  function log(msg) {
+    console.log('[FiddleStIX]', msg);
+  }
+
+  async function connect() {
+    try {
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: 'FiddleStIX_V1' }],
+        optionalServices: [UART_SERVICE_UUID]
+      });
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+      server = await device.gatt.connect();
+      uartService = await server.getPrimaryService(UART_SERVICE_UUID);
+      rxCharacteristic = await uartService.getCharacteristic(UART_RX_UUID);
+      txCharacteristic = await uartService.getCharacteristic(UART_TX_UUID);
+      await txCharacteristic.startNotifications();
+      txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+      connected = true;
+      connectBtn.textContent = 'Connected';
+      connectBtn.classList.add('connected');
+      log('Connected to device');
+    } catch (error) {
+      console.error(error);
+      alert('Connection failed: ' + error);
     }
+  }
 
-    async function connect() {
+  function onDisconnected() {
+    connected = false;
+    connectBtn.textContent = 'Connect';
+    connectBtn.classList.remove('connected');
+    log('Disconnected');
+  }
+
+  async function sendCommand(str) {
+    if (!connected || !rxCharacteristic) {
+      alert('Not connected');
+      return;
+    }
+    const enc = new TextEncoder();
+    const data = enc.encode(str + '\n');
+    try {
+      await rxCharacteristic.writeValue(data);
+    } catch (e) {
+      console.error('write error', e);
+    }
+  }
+
+  function handleNotifications(event) {
+    const decoder = new TextDecoder();
+    const text = decoder.decode(event.target.value);
+    // data may contain multiple lines
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (!line.trim()) continue;
       try {
-        statusSpan.textContent = 'Requesting device...';
-        bleDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [NUS_SERVICE_UUID] }]
-        });
-
-        statusSpan.textContent = 'Connecting...';
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-        const server = await bleDevice.gatt.connect();
-        nusService = await server.getPrimaryService(NUS_SERVICE_UUID);
-
-        rxCharacteristic = await nusService.getCharacteristic(NUS_CHAR_RX_UUID);
-        txCharacteristic = await nusService.getCharacteristic(NUS_CHAR_TX_UUID);
-
-        await txCharacteristic.startNotifications();
-        txCharacteristic.addEventListener('characteristicvaluechanged', onTxNotification);
-
-        setUiConnected(true);
-      } catch (error) {
-        console.error(error);
-        statusSpan.textContent = 'Connection failed: ' + error;
-        setUiConnected(false);
+        const obj = JSON.parse(line);
+        handleTelemetry(obj);
+      } catch (e) {
+        // not JSON, ignore
       }
     }
+  }
 
-    async function disconnect() {
-      if (bleDevice && bleDevice.gatt.connected) {
-        await bleDevice.gatt.disconnect();
-      }
-      setUiConnected(false);
+  function handleTelemetry(t) {
+    if (typeof t.list === 'number') {
+      currentList = t.list;
+      updateListUI();
+    }
+    if (typeof t.pattern === 'number') {
+      currentPattern = t.pattern;
+      patternSlider.value = currentPattern;
+      patternLabel.textContent = currentPattern.toString();
+    }
+    if (typeof t.state === 'number') {
+      currentState = t.state;
+      stateLabel.textContent = currentState.toString();
     }
 
-    function onDisconnected() {
-      setUiConnected(false);
-      statusSpan.textContent = 'Disconnected';
+    // magnitude values for graphs
+    if (typeof t.gx === 'number' && typeof t.gy === 'number' && typeof t.gz === 'number') {
+      const gmag = Math.sqrt(t.gx*t.gx + t.gy*t.gy + t.gz*t.gz);
+      addDataPoint(gyroData, gmag);
+      drawGraph(gyroCtx, gyroCanvas, gyroData, 'Gyro');
+    }
+    if (typeof t.ax === 'number' && typeof t.ay === 'number' && typeof t.az === 'number') {
+      const amag = Math.sqrt(t.ax*t.ax + t.ay*t.ay + t.az*t.az);
+      addDataPoint(accelData, amag);
+      drawGraph(accelCtx, accelCanvas, accelData, 'Accel');
+    }
+    if (typeof t.mic === 'number') {
+      addDataPoint(micData, t.mic);
+      drawGraph(micCtx, micCanvas, micData, 'Mic');
     }
 
-    function sendLine(text) {
-      if (!isConnected || !rxCharacteristic) return;
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text + '\n');
-      rxCharacteristic.writeValue(data).catch(console.error);
-    }
+    listLabel.textContent = LIST_NAMES[currentList] || currentList.toString();
+  }
 
-    // -----------------------------
-    // Button bindings
-    // -----------------------------
-    connectBtn.addEventListener('click', () => {
-      if (isConnected) {
-        disconnect();
-      } else {
-        connect();
-      }
+  function addDataPoint(arr, val) {
+    arr.push(val);
+    if (arr.length > MAX_POINTS) arr.shift();
+  }
+
+  function drawGraph(ctx, canvas, data, label) {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+
+    if (data.length < 2) return;
+
+    const maxVal = Math.max(...data) || 1;
+    const minVal = Math.min(...data) || 0;
+    const range = (maxVal - minVal) || 1;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 1;
+    const step = w / (MAX_POINTS - 1);
+    data.forEach((v, i) => {
+      const x = i * step;
+      const y = h - ((v - minVal) / range) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     });
+    ctx.stroke();
 
-    prevPageBtn.addEventListener('click', () => sendLine('PL'));
-    nextPageBtn.addEventListener('click', () => sendLine('NL'));
-    prevPatternBtn.addEventListener('click', () => sendLine('PP'));
-    nextPatternBtn.addEventListener('click', () => sendLine('NP'));
-    favBtn.addEventListener('click', () => sendLine('FAV'));
-    sleepBtn.addEventListener('click', () => sendLine('SLEEP'));
-    raveBtn.addEventListener('click', () => sendLine('RAVE'));
+    ctx.fillStyle = '#888';
+    ctx.font = '10px system-ui';
+    ctx.fillText(label, 4, 12);
+  }
 
-    brightnessSlider.addEventListener('input', () => {
-      brightnessLabel.textContent = brightnessSlider.value;
-      sendLine('GB:' + brightnessSlider.value);
+  function updateListUI() {
+    const dots = listDotsContainer.querySelectorAll('.list-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentList);
     });
+    listLabel.textContent = LIST_NAMES[currentList] || currentList.toString();
+    patternLabel.textContent = currentPattern.toString();
+  }
 
-    shuffleSlider.addEventListener('input', () => {
-      shuffleLabel.textContent = shuffleSlider.value;
-      sendLine('T:' + shuffleSlider.value);
+  // Build list color dots
+  function initListDots() {
+    LIST_COLORS.forEach((col, idx) => {
+      const div = document.createElement('div');
+      div.className = 'list-dot';
+      div.style.backgroundColor = col;
+      div.title = LIST_NAMES[idx];
+      div.addEventListener('click', () => {
+        currentList = idx;
+        updateListUI();
+        sendCommand(`CMD:SET_PATTERN:${currentList},${currentPattern}`);
+      });
+      listDotsContainer.appendChild(div);
     });
+    updateListUI();
+  }
 
-    function sendFlags() {
-      const flagStr = `FLAGS:shuffle_P=${shufflePChk.checked ? 1 : 0},sleepTimer=${sleepTimerChk.checked ? 1 : 0},powerLock=${powerLockChk.checked ? 1 : 0}`;
-      sendLine(flagStr);
+  // Event handlers
+  connectBtn.addEventListener('click', () => {
+    if (!connected) {
+      connect();
+    } else if (device && device.gatt.connected) {
+      device.gatt.disconnect();
     }
+  });
 
-    shufflePChk.addEventListener('change', sendFlags);
-    sleepTimerChk.addEventListener('change', sendFlags);
-    powerLockChk.addEventListener('change', sendFlags);
+  prevPageBtn.addEventListener('click', () => sendCommand('CMD:PREV_LIST'));
+  nextPageBtn.addEventListener('click', () => sendCommand('CMD:NEXT_LIST'));
+  prevPatternBtn.addEventListener('click', () => sendCommand('CMD:PREV_PATTERN'));
+  nextPatternBtn.addEventListener('click', () => sendCommand('CMD:NEXT_PATTERN'));
+  favoriteBtn.addEventListener('click', () => sendCommand('CMD:FAVORITE'));
+  sleepBtn.addEventListener('click', () => sendCommand('CMD:SLEEP'));
+  raveBtn.addEventListener('click', () => sendCommand('CMD:RAVE'));
 
-    // -----------------------------
-    // Charts setup
-    // -----------------------------
+  setPatternBtn.addEventListener('click', () => {
+    currentPattern = parseInt(patternSlider.value, 10);
+    patternLabel.textContent = currentPattern.toString();
+    sendCommand(`CMD:SET_PATTERN:${currentList},${currentPattern}`);
+  });
 
-    const maxPoints = 80;
-    const labels = Array.from({ length: maxPoints }, (_, i) => '');
+  brightnessSlider.addEventListener('change', () => {
+    const val = parseInt(brightnessSlider.value, 10);
+    sendCommand(`CMD:SET_BRIGHT:${val}`);
+  });
 
-    const gyroCtx  = document.getElementById('gyroChart').getContext('2d');
-    const accelCtx = document.getElementById('accelChart').getContext('2d');
-    const micCtx   = document.getElementById('micChart').getContext('2d');
+  shuffleSlider.addEventListener('change', () => {
+    const val = parseInt(shuffleSlider.value, 10);
+    sendCommand(`CMD:SET_SHUF_T:${val}`);
+  });
 
-    const gyroData = {
-      labels,
-      datasets: [
-        { label: 'gx', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 },
-        { label: 'gy', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 },
-        { label: 'gz', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 }
-      ]
-    };
+  toggleSleepTimerBtn.addEventListener('click', () => {
+    toggleSleepTimerBtn.classList.toggle('on');
+    sendCommand('CMD:TOGGLE:sleepTimer');
+  });
 
-    const accelData = {
-      labels,
-      datasets: [
-        { label: 'ax', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 },
-        { label: 'ay', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 },
-        { label: 'az', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 }
-      ]
-    };
+  togglePowerLockBtn.addEventListener('click', () => {
+    togglePowerLockBtn.classList.toggle('on');
+    sendCommand('CMD:TOGGLE:powerLock');
+  });
 
-    const micData = {
-      labels,
-      datasets: [
-        { label: 'mic', data: Array(maxPoints).fill(0), borderWidth: 1, tension: 0.2 }
-      ]
-    };
+  toggleShuffleBtn.addEventListener('click', () => {
+    toggleShuffleBtn.classList.toggle('on');
+    sendCommand('CMD:TOGGLE:shuffle_P');
+  });
 
-    const commonOptions = {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { labels: { color: '#ccc' } } },
-      scales: {
-        x: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-        y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-      }
-    };
-
-    const gyroChart = new Chart(gyroCtx, {
-      type: 'line',
-      data: gyroData,
-      options: {
-        ...commonOptions,
-        scales: { 
-          ...commonOptions.scales,
-          y: { ...commonOptions.scales.y, suggestedMin: -500, suggestedMax: 500 }
-        }
-      }
-    });
-
-    const accelChart = new Chart(accelCtx, {
-      type: 'line',
-      data: accelData,
-      options: {
-        ...commonOptions,
-        scales: { 
-          ...commonOptions.scales,
-          y: { ...commonOptions.scales.y, suggestedMin: -4, suggestedMax: 4 }
-        }
-      }
-    });
-
-    const micChart = new Chart(micCtx, {
-      type: 'line',
-      data: micData,
-      options: {
-        ...commonOptions,
-        scales: { 
-          ...commonOptions.scales,
-          y: { ...commonOptions.scales.y, suggestedMin: 0, suggestedMax: 1 }
-        }
-      }
-    });
-
-    function pushData(dataset, v) {
-      dataset.data.push(v);
-      if (dataset.data.length > maxPoints) dataset.data.shift();
-    }
-
-    function onTxNotification(event) {
-      const value = event.target.value;
-      const decoder = new TextDecoder('utf-8');
-      const text = decoder.decode(value);
-      const lines = text.split(/\r?\n/);
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        if (line.startsWith('IMU:')) {
-          const rest = line.slice(4);
-          const parts = rest.split(',');
-          if (parts.length === 6) {
-            const ax = parseFloat(parts[0]);
-            const ay = parseFloat(parts[1]);
-            const az = parseFloat(parts[2]);
-            const gx = parseFloat(parts[3]);
-            const gy = parseFloat(parts[4]);
-            const gz = parseFloat(parts[5]);
-
-            pushData(accelData.datasets[0], ax);
-            pushData(accelData.datasets[1], ay);
-            pushData(accelData.datasets[2], az);
-            accelChart.update('none');
-
-            pushData(gyroData.datasets[0], gx);
-            pushData(gyroData.datasets[1], gy);
-            pushData(gyroData.datasets[2], gz);
-            gyroChart.update('none');
-          }
-        } else if (line.startsWith('MIC:')) {
-          const rest = line.slice(4);
-          const val = parseFloat(rest);
-          pushData(micData.datasets[0], val);
-          micChart.update('none');
-        }
-      }
-    }
-
-    // Initial UI state
-    setUiConnected(false);
-  </script>
+  // Init
+  initListDots();
+</script>
 </body>
 </html>
