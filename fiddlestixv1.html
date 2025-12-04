@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FiddleStIX V1 Control</title>
+  <title>FiddleStIX V1 Dual Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Chart.js for plotting IMU/mic data -->
+  <!-- Chart.js for plotting IMU / mic data -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    /* Basic dark UI layout */
+    /* Basic dark theme layout */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
@@ -26,10 +26,17 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
     header h1 {
       margin: 0;
       font-size: 1.2rem;
+    }
+    .header-right {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
     header button {
       padding: 0.5rem 1rem;
@@ -39,15 +46,17 @@
       color: #000;
       font-weight: 600;
       cursor: pointer;
+      font-size: 0.85rem;
     }
     header button.connected {
       background: #0f0;
       color: #000;
     }
+
     main {
       padding: 1rem;
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
       gap: 1rem;
     }
     section {
@@ -63,6 +72,8 @@
       text-transform: uppercase;
       color: #aaa;
     }
+
+    /* Control layout */
     .controls-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -100,6 +111,7 @@
       text-align: right;
       font-size: 0.85rem;
     }
+
     .list-circles {
       display: flex;
       gap: 0.4rem;
@@ -117,6 +129,7 @@
       border-color: #fff;
       box-shadow: 0 0 0 2px #0af;
     }
+
     .bool-toggle {
       display: flex;
       align-items: center;
@@ -124,20 +137,46 @@
       margin-bottom: 0.3rem;
       font-size: 0.85rem;
     }
-    .graphs {
+
+    .status-line {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.25rem;
+    }
+
+    .device-status-block {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 8px;
+      background: #202020;
+      border: 1px solid #333;
+      font-size: 0.8rem;
+    }
+
+    .graphs-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
+    .device-graphs {
+      border-radius: 10px;
+      padding: 0.5rem;
+      background: #202020;
+      border: 1px solid #333;
+    }
+    .device-graphs h3 {
+      margin: 0 0 0.3rem 0;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #ccc;
+    }
+
     canvas {
       background: #000;
       border-radius: 8px;
     }
-    .status-line {
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 0.5rem;
-    }
+
     .debug-box {
       margin-top: 0.5rem;
       font-size: 0.7rem;
@@ -145,11 +184,12 @@
       background: #111;
       border-radius: 6px;
       padding: 0.5rem;
-      max-height: 120px;
+      max-height: 80px;
       overflow-y: auto;
       border: 1px solid #333;
     }
-    @media (max-width: 900px) {
+
+    @media (max-width: 1100px) {
       main {
         grid-template-columns: 1fr;
       }
@@ -158,25 +198,20 @@
 </head>
 <body>
 <header>
-  <h1>FiddleStIX V1 Control</h1>
-  <!-- Connect/disconnect button -->
-  <button id="connectBtn">Connect</button>
+  <h1>FiddleStIX V1 Dual Control</h1>
+  <div class="header-right">
+    <!-- Separate connect buttons for two devices -->
+    <button id="connectBtnA">Connect #1</button>
+    <button id="connectBtnB">Connect #2</button>
+  </div>
 </header>
 
 <main>
-  <!-- LEFT SIDE: Controls + status -->
+  <!-- LEFT SIDE: Shared controls (broadcast to both devices) + per-device status/debug -->
   <section id="controlSection">
-    <h2>Controls</h2>
+    <h2>Controls (Apply to All Connected Devices)</h2>
 
-    <!-- Current state info from telemetry -->
-    <div class="status-line">
-      Device state:
-      <span id="stateLabel">Unknown</span> ·
-      List: <span id="listLabel">-</span> ·
-      Pattern: <span id="patternLabel">-</span>
-    </div>
-
-    <!-- Buttons that send CMD:... lines to firmware -->
+    <!-- GLOBAL control buttons (send CMD:... to both devices) -->
     <div class="controls-grid">
       <button data-cmd="CMD:PREV_LIST">Previous Page</button>
       <button data-cmd="CMD:NEXT_LIST">Next Page</button>
@@ -189,34 +224,34 @@
 
     <hr style="border: none; border-top: 1px solid #333; margin: 1rem 0;">
 
-    <!-- List selector: clickable colored circles for each list index -->
+    <!-- List selection circles (single set, commands go to both devices) -->
     <div class="row">
       <label>Lists</label>
       <div class="list-circles" id="listCircles"></div>
     </div>
 
-    <!-- Pattern index slider (0–99) -->
+    <!-- Pattern slider (SET:PATTERN applies to all connected devices) -->
     <div class="row">
       <label>Pattern #</label>
       <input type="range" id="patternSlider" min="0" max="99" value="0">
       <span class="value" id="patternSliderVal">0</span>
     </div>
 
-    <!-- Global brightness slider (0–7) -->
+    <!-- Global brightness slider (SET:BRIGHT applies to all connected devices) -->
     <div class="row">
       <label>Brightness</label>
       <input type="range" id="brightSlider" min="0" max="7" value="7">
       <span class="value" id="brightSliderVal">7</span>
     </div>
 
-    <!-- Shuffle dwell time slider (ms) -->
+    <!-- Shuffle dwell time slider (SET:SHUFFLE_T applies to all connected devices) -->
     <div class="row">
       <label>Shuffle T (ms)</label>
       <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="5000">
       <span class="value" id="shuffleSliderVal">5000</span>
     </div>
 
-    <!-- Boolean flags: shuffle, sleepTimer, powerLock -->
+    <!-- Boolean flags (SET:BOOL:... broadcast to all devices) -->
     <div>
       <h2>Flags</h2>
       <div class="bool-toggle">
@@ -233,27 +268,49 @@
       </div>
     </div>
 
-    <!-- Simple debug text area to see latest telemetry lines / errors -->
-    <div class="debug-box" id="debugBox">
-      <!-- Filled from JS -->
+    <!-- PER-DEVICE STATUS INFO -->
+    <div class="device-status-block">
+      <strong>Device #1 Status</strong><br>
+      State: <span id="stateLabelA">Unknown</span> ·
+      List: <span id="listLabelA">-</span> ·
+      Pattern: <span id="patternLabelA">-</span>
+      <div class="debug-box" id="debugBoxA"></div>
+    </div>
+
+    <div class="device-status-block">
+      <strong>Device #2 Status</strong><br>
+      State: <span id="stateLabelB">Unknown</span> ·
+      List: <span id="listLabelB">-</span> ·
+      Pattern: <span id="patternLabelB">-</span>
+      <div class="debug-box" id="debugBoxB"></div>
     </div>
   </section>
 
-  <!-- RIGHT SIDE: Graphs -->
+  <!-- RIGHT SIDE: 6 graphs total (3 per device) -->
   <section id="graphsSection">
-    <h2>Sensor Graphs (last ~30s)</h2>
-    <div class="graphs">
-      <div>
+    <h2>Sensor Graphs (Last ~30s)</h2>
+
+    <div class="graphs-grid">
+      <!-- Device #1 graphs -->
+      <div class="device-graphs">
+        <h3>Device #1</h3>
         <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
-        <canvas id="gyroCanvas" height="120"></canvas>
+        <canvas id="gyroCanvasA" height="100"></canvas>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Accel (ax, ay, az)</div>
+        <canvas id="accelCanvasA" height="100"></canvas>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic Level</div>
+        <canvas id="micCanvasA" height="100"></canvas>
       </div>
-      <div>
-        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Accel (ax, ay, az)</div>
-        <canvas id="accelCanvas" height="120"></canvas>
-      </div>
-      <div>
-        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Mic Level</div>
-        <canvas id="micCanvas" height="120"></canvas>
+
+      <!-- Device #2 graphs -->
+      <div class="device-graphs">
+        <h3>Device #2</h3>
+        <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
+        <canvas id="gyroCanvasB" height="100"></canvas>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Accel (ax, ay, az)</div>
+        <canvas id="accelCanvasB" height="100"></canvas>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic Level</div>
+        <canvas id="micCanvasB" height="100"></canvas>
       </div>
     </div>
   </section>
@@ -262,185 +319,350 @@
 <script>
   /************************************************************
    * BLE UART UUIDs (Nordic / Adafruit UART)
-   *  - SERVICE: 6e400001-b5a3-f393-e0a9-e50e24dcca9e
-   *  - RX CHAR (write):   6e400002-b5a3-f393-e0a9-e50e24dcca9e
-   *  - TX CHAR (notify):  6e400003-b5a3-f393-e0a9-e50e24dcca9e
    ************************************************************/
   const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
 
-  // References to BLE objects
-  let device = null;
-  let server = null;
-  let uartService = null;
-  let rxChar = null; // write (GUI -> device)
-  let txChar = null; // notify (device -> GUI)
-
-  // UI elements
-  const connectBtn = document.getElementById('connectBtn');
-  const stateLabel = document.getElementById('stateLabel');
-  const listLabel = document.getElementById('listLabel');
-  const patternLabel = document.getElementById('patternLabel');
-  const patternSlider = document.getElementById('patternSlider');
-  const patternSliderVal = document.getElementById('patternSliderVal');
-  const brightSlider = document.getElementById('brightSlider');
-  const brightSliderVal = document.getElementById('brightSliderVal');
-  const shuffleSlider = document.getElementById('shuffleSlider');
-  const shuffleSliderVal = document.getElementById('shuffleSliderVal');
-  const shuffleFlag = document.getElementById('shuffleFlag');
-  const sleepTimerFlag = document.getElementById('sleepTimerFlag');
-  const powerLockFlag = document.getElementById('powerLockFlag');
-  const listCircles = document.getElementById('listCircles');
-  const debugBox = document.getElementById('debugBox');
+  // Number of points to keep in history (~600 → ~30 seconds @ 20Hz)
+  const MAX_POINTS = 600;
 
   /************************************************************
-   * DATA STRUCTURES FOR GRAPHS
-   * We keep ~600 points (30s @ 20Hz) for each series.
+   * Helper: clamp array length to MAX_POINTS
    ************************************************************/
-  const MAX_POINTS = 600;
-  let gyroData = { t: [], gx: [], gy: [], gz: [] };
-  let accelData = { t: [], ax: [], ay: [], az: [] };
-  let micData = { t: [], mic: [] };
-
   function trimArray(arr) {
     while (arr.length > MAX_POINTS) arr.shift();
   }
 
-  // Push one new sensor sample (from TEL line) into buffers
-  function pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
-    gyroData.t.push(ms);
-    gyroData.gx.push(gx);
-    gyroData.gy.push(gy);
-    gyroData.gz.push(gz);
+  /************************************************************
+   * Class representing one FiddleStIX device connection
+   * - Handles BLE connect, notifications, telemetry parsing
+   * - Maintains its own data buffers + charts
+   * - Updates its own status labels + debug box
+   ************************************************************/
+  class FiddleDevice {
+    constructor(idLetter) {
+      // idLetter: 'A' or 'B'
+      this.id = idLetter;
 
-    accelData.t.push(ms);
-    accelData.ax.push(ax);
-    accelData.ay.push(ay);
-    accelData.az.push(az);
+      // BLE objects
+      this.device = null;
+      this.server = null;
+      this.uartService = null;
+      this.rxChar = null;  // write
+      this.txChar = null;  // notify
 
-    micData.t.push(ms);
-    micData.mic.push(mic);
+      // For line-assembly of incoming notifications
+      this.rxBuffer = '';
 
-    trimArray(gyroData.t);
-    trimArray(gyroData.gx);
-    trimArray(gyroData.gy);
-    trimArray(gyroData.gz);
+      // UI references unique to this device
+      this.stateLabel = document.getElementById('stateLabel' + idLetter);
+      this.listLabel  = document.getElementById('listLabel' + idLetter);
+      this.patternLabel = document.getElementById('patternLabel' + idLetter);
+      this.debugBox = document.getElementById('debugBox' + idLetter);
+      this.connectBtn = document.getElementById('connectBtn' + idLetter);
 
-    trimArray(accelData.t);
-    trimArray(accelData.ax);
-    trimArray(accelData.ay);
-    trimArray(accelData.az);
+      // Data buffers for charts
+      this.gyroData = { t: [], gx: [], gy: [], gz: [] };
+      this.accelData = { t: [], ax: [], ay: [], az: [] };
+      this.micData = { t: [], mic: [] };
 
-    trimArray(micData.t);
-    trimArray(micData.mic);
+      // Charts for this device
+      this.gyroChart = new Chart(
+        document.getElementById('gyroCanvas' + idLetter).getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: this.gyroData.t,
+            datasets: [
+              { label: 'gx', data: this.gyroData.gx, borderWidth: 1, pointRadius: 0 },
+              { label: 'gy', data: this.gyroData.gy, borderWidth: 1, pointRadius: 0 },
+              { label: 'gz', data: this.gyroData.gz, borderWidth: 1, pointRadius: 0 }
+            ]
+          },
+          options: {
+            animation: false,
+            responsive: true,
+            scales: {
+              x: { display: false },
+              y: {
+                ticks: { color: '#aaa' },
+                grid: { color: '#333' }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: '#aaa' } }
+            }
+          }
+        }
+      );
+
+      this.accelChart = new Chart(
+        document.getElementById('accelCanvas' + idLetter).getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: this.accelData.t,
+            datasets: [
+              { label: 'ax', data: this.accelData.ax, borderWidth: 1, pointRadius: 0 },
+              { label: 'ay', data: this.accelData.ay, borderWidth: 1, pointRadius: 0 },
+              { label: 'az', data: this.accelData.az, borderWidth: 1, pointRadius: 0 }
+            ]
+          },
+          options: {
+            animation: false,
+            responsive: true,
+            scales: {
+              x: { display: false },
+              y: {
+                ticks: { color: '#aaa' },
+                grid: { color: '#333' }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: '#aaa' } }
+            }
+          }
+        }
+      );
+
+      this.micChart = new Chart(
+        document.getElementById('micCanvas' + idLetter).getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: this.micData.t,
+            datasets: [
+              { label: 'mic', data: this.micData.mic, borderWidth: 1, pointRadius: 0 }
+            ]
+          },
+          options: {
+            animation: false,
+            responsive: true,
+            scales: {
+              x: { display: false },
+              y: {
+                ticks: { color: '#aaa' },
+                grid: { color: '#333' }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: '#aaa' } }
+            }
+          }
+        }
+      );
+    }
+
+    /***********************
+     * LOGGING TO UI + CONSOLE
+     ***********************/
+    log(msg) {
+      console.log(`[${this.id}] ${msg}`);
+      if (!this.debugBox) return;
+      const line = document.createElement('div');
+      line.textContent = msg;
+      this.debugBox.appendChild(line);
+      while (this.debugBox.children.length > 30) {
+        this.debugBox.removeChild(this.debugBox.firstChild);
+      }
+      this.debugBox.scrollTop = this.debugBox.scrollHeight;
+    }
+
+    /***********************
+     * CONNECT / DISCONNECT
+     ***********************/
+    async connect() {
+      try {
+        // Request device whose name starts with "FiddleStIX_V1"
+        this.device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'FiddleStIX_V1' }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
+
+        this.device.addEventListener('gattserverdisconnected', () => this.onDisconnected());
+
+        this.server = await this.device.gatt.connect();
+        this.uartService = await this.server.getPrimaryService(UART_SERVICE_UUID);
+        this.rxChar = await this.uartService.getCharacteristic(UART_RX_CHAR_UUID);
+        this.txChar = await this.uartService.getCharacteristic(UART_TX_CHAR_UUID);
+
+        await this.txChar.startNotifications();
+        this.txChar.addEventListener('characteristicvaluechanged', (evt) => this.handleNotifications(evt));
+
+        this.setConnectedUI(true);
+        this.log('Connected to FiddleStIX_V1');
+
+      } catch (err) {
+        console.error(`BLE connect error (${this.id})`, err);
+        alert('BLE connection failed for device ' + this.id + ': ' + err);
+        this.setConnectedUI(false);
+      }
+    }
+
+    async disconnect() {
+      try {
+        if (this.device && this.device.gatt && this.device.gatt.connected) {
+          await this.device.gatt.disconnect();
+        }
+      } catch (err) {
+        console.error(`BLE disconnect error (${this.id})`, err);
+      } finally {
+        this.setConnectedUI(false);
+        this.log('Disconnected');
+      }
+    }
+
+    onDisconnected() {
+      this.setConnectedUI(false);
+      this.log('Device disconnected (GATT)');
+    }
+
+    setConnectedUI(connected) {
+      if (!this.connectBtn) return;
+      if (connected) {
+        this.connectBtn.textContent = `Disconnect #${this.id === 'A' ? '1' : '2'}`;
+        this.connectBtn.classList.add('connected');
+      } else {
+        this.connectBtn.textContent = `Connect #${this.id === 'A' ? '1' : '2'}`;
+        this.connectBtn.classList.remove('connected');
+      }
+    }
+
+    get isConnected() {
+      return !!(this.device && this.device.gatt && this.device.gatt.connected);
+    }
+
+    /***********************
+     * RECEIVING TELEMETRY
+     * - Device sends ASCII lines:
+     *   TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state\n
+     * - Notifications may contain partial lines, so we buffer.
+     ***********************/
+    handleNotifications(event) {
+      const value = event.target.value;
+      const decoder = new TextDecoder('utf-8');
+      const chunk = decoder.decode(value);
+
+      // Append chunk to our per-device buffer
+      this.rxBuffer += chunk;
+
+      // Extract and process each full line
+      let newlineIndex;
+      while ((newlineIndex = this.rxBuffer.indexOf('\n')) !== -1) {
+        const line = this.rxBuffer.slice(0, newlineIndex).trim();
+        this.rxBuffer = this.rxBuffer.slice(newlineIndex + 1);
+
+        if (!line) continue;
+
+        this.log('RX: ' + line);
+
+        if (line.startsWith('TEL,')) {
+          this.parseTelemetryLine(line);
+        } else {
+          // Other text (unused for now)
+        }
+      }
+    }
+
+    parseTelemetryLine(line) {
+      // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
+      const parts = line.split(',');
+      if (parts.length < 12) return;
+
+      const ms = parseInt(parts[1]);
+      const ax = parseFloat(parts[2]);
+      const ay = parseFloat(parts[3]);
+      const az = parseFloat(parts[4]);
+      const gx = parseFloat(parts[5]);
+      const gy = parseFloat(parts[6]);
+      const gz = parseFloat(parts[7]);
+      const mic = parseFloat(parts[8]);
+      const list = parseInt(parts[9]);
+      const pattern = parseInt(parts[10]);
+      const state = parseInt(parts[11]);
+
+      // Store into our time-series buffers
+      this.pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
+
+      // Update per-device status labels
+      this.stateLabel.textContent = stateNameFromId(state);
+      this.listLabel.textContent = list.toString();
+      this.patternLabel.textContent = pattern.toString();
+    }
+
+    // Add new sample to this device's buffers
+    pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
+      this.gyroData.t.push(ms);
+      this.gyroData.gx.push(gx);
+      this.gyroData.gy.push(gy);
+      this.gyroData.gz.push(gz);
+
+      this.accelData.t.push(ms);
+      this.accelData.ax.push(ax);
+      this.accelData.ay.push(ay);
+      this.accelData.az.push(az);
+
+      this.micData.t.push(ms);
+      this.micData.mic.push(mic);
+
+      trimArray(this.gyroData.t);
+      trimArray(this.gyroData.gx);
+      trimArray(this.gyroData.gy);
+      trimArray(this.gyroData.gz);
+
+      trimArray(this.accelData.t);
+      trimArray(this.accelData.ax);
+      trimArray(this.accelData.ay);
+      trimArray(this.accelData.az);
+
+      trimArray(this.micData.t);
+      trimArray(this.micData.mic);
+    }
+
+    // Refresh charts from latest buffer contents
+    updateCharts() {
+      // Gyro
+      this.gyroChart.data.labels = this.gyroData.t;
+      this.gyroChart.data.datasets[0].data = this.gyroData.gx;
+      this.gyroChart.data.datasets[1].data = this.gyroData.gy;
+      this.gyroChart.data.datasets[2].data = this.gyroData.gz;
+      this.gyroChart.update('none');
+
+      // Accel
+      this.accelChart.data.labels = this.accelData.t;
+      this.accelChart.data.datasets[0].data = this.accelData.ax;
+      this.accelChart.data.datasets[1].data = this.accelData.ay;
+      this.accelChart.data.datasets[2].data = this.accelData.az;
+      this.accelChart.update('none');
+
+      // Mic
+      this.micChart.data.labels = this.micData.t;
+      this.micChart.data.datasets[0].data = this.micData.mic;
+      this.micChart.update('none');
+    }
+
+    /***********************
+     * SENDING COMMANDS
+     * - str should be like "CMD:..." or "SET:..."
+     * - We add '\n' before sending over RX characteristic
+     ***********************/
+    async sendCommand(str) {
+      if (!this.rxChar || !this.isConnected) return;
+      const data = new TextEncoder().encode(str + '\n');
+      try {
+        await this.rxChar.writeValue(data);
+        this.log('TX: ' + str);
+      } catch (err) {
+        console.error(`sendCommand error (${this.id})`, err);
+        this.log('sendCommand error: ' + err);
+      }
+    }
   }
 
   /************************************************************
-   * CHART.JS SETUP
+   * Helper: map state ID to human-readable name
    ************************************************************/
-  const gyroCtx = document.getElementById('gyroCanvas').getContext('2d');
-  const accelCtx = document.getElementById('accelCanvas').getContext('2d');
-  const micCtx = document.getElementById('micCanvas').getContext('2d');
-
-  const gyroChart = new Chart(gyroCtx, {
-    type: 'line',
-    data: {
-      labels: gyroData.t,
-      datasets: [
-        { label: 'gx', data: gyroData.gx, borderWidth: 1, pointRadius: 0 },
-        { label: 'gy', data: gyroData.gy, borderWidth: 1, pointRadius: 0 },
-        { label: 'gz', data: gyroData.gz, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
-        }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
-      }
-    }
-  });
-
-  const accelChart = new Chart(accelCtx, {
-    type: 'line',
-    data: {
-      labels: accelData.t,
-      datasets: [
-        { label: 'ax', data: accelData.ax, borderWidth: 1, pointRadius: 0 },
-        { label: 'ay', data: accelData.ay, borderWidth: 1, pointRadius: 0 },
-        { label: 'az', data: accelData.az, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
-        }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
-      }
-    }
-  });
-
-  const micChart = new Chart(micCtx, {
-    type: 'line',
-    data: {
-      labels: micData.t,
-      datasets: [
-        { label: 'mic', data: micData.mic, borderWidth: 1, pointRadius: 0 }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
-        }
-      },
-      plugins: {
-        legend: { labels: { color: '#aaa' } }
-      }
-    }
-  });
-
-  // Periodically refresh charts with the latest data
-  function updateCharts() {
-    gyroChart.data.labels = gyroData.t;
-    gyroChart.data.datasets[0].data = gyroData.gx;
-    gyroChart.data.datasets[1].data = gyroData.gy;
-    gyroChart.data.datasets[2].data = gyroData.gz;
-    gyroChart.update('none');
-
-    accelChart.data.labels = accelData.t;
-    accelChart.data.datasets[0].data = accelData.ax;
-    accelChart.data.datasets[1].data = accelData.ay;
-    accelChart.data.datasets[2].data = accelData.az;
-    accelChart.update('none');
-
-    micChart.data.labels = micData.t;
-    micChart.data.datasets[0].data = micData.mic;
-    micChart.update('none');
-  }
-
-  setInterval(updateCharts, 200); // update charts 5x per second
-
-  // Convert state ID (numeric) to text label
   function stateNameFromId(id) {
     switch (id) {
       case 0: return 'OFF';
@@ -456,23 +678,34 @@
   }
 
   /************************************************************
-   * LIST CIRCLE UI
+   * Instantiate two device controllers: A (Device #1) and B (#2)
    ************************************************************/
+  const deviceA = new FiddleDevice('A');
+  const deviceB = new FiddleDevice('B');
+
+  // For convenience, keep them in an array when broadcasting commands
+  const devices = [deviceA, deviceB];
+
+  /************************************************************
+   * LIST CIRCLES (single set of clickable colors)
+   * - When clicked, send SET:LIST:n to all connected devices.
+   ************************************************************/
+  const listCirclesContainer = document.getElementById('listCircles');
+
   const listColors = [
-    '#ffffff', // WHITE
-    '#ff0000', // RED
-    '#ff7f00', // ORANGE
-    '#ffff00', // YELLOW
-    '#00ff00', // GREEN
-    '#0000ff', // BLUE
-    '#4b0082', // INDIGO
-    '#ee82ee', // VIOLET
-    '#000000'  // BLACK (reserved)
+    '#ffffff', // LIST_WHITE
+    '#ff0000', // LIST_RED
+    '#ff7f00', // LIST_ORANGE
+    '#ffff00', // LIST_YELLOW
+    '#00ff00', // LIST_GREEN
+    '#0000ff', // LIST_BLUE
+    '#4b0082', // LIST_INDIGO
+    '#ee82ee', // LIST_VIOLET
+    '#000000'  // LIST_BLACK (reserved)
   ];
 
-  // Create a circle for each list index
   function buildListCircles() {
-    listCircles.innerHTML = '';
+    listCirclesContainer.innerHTML = '';
     listColors.forEach((color, idx) => {
       const div = document.createElement('div');
       div.className = 'list-circle';
@@ -480,15 +713,17 @@
       div.title = `List ${idx}`;
       div.dataset.listIndex = idx.toString();
       div.addEventListener('click', () => {
-        sendCommand(`SET:LIST:${idx}`);
+        // Broadcast list change to all connected devices
+        broadcastCommand(`SET:LIST:${idx}`);
         highlightActiveList(idx);
       });
-      listCircles.appendChild(div);
+      listCirclesContainer.appendChild(div);
     });
   }
 
+  // For now, highlight the last list index we commanded (not per-device)
   function highlightActiveList(idx) {
-    Array.from(listCircles.children).forEach((child, i) => {
+    Array.from(listCirclesContainer.children).forEach((child, i) => {
       child.classList.toggle('active', i === idx);
     });
   }
@@ -496,225 +731,102 @@
   buildListCircles();
 
   /************************************************************
-   * CONNECT/DISCONNECT UI STATE
+   * CONNECT BUTTON HANDLERS
    ************************************************************/
-  function setConnectedUI(connected) {
-    if (connected) {
-      connectBtn.textContent = 'Disconnect';
-      connectBtn.classList.add('connected');
+  document.getElementById('connectBtnA').addEventListener('click', () => {
+    if (deviceA.isConnected) {
+      deviceA.disconnect();
     } else {
-      connectBtn.textContent = 'Connect';
-      connectBtn.classList.remove('connected');
-    }
-  }
-
-  /************************************************************
-   * DEBUG LOGGING (visible in page), plus console.log
-   ************************************************************/
-  function logDebug(msg) {
-    console.log(msg);
-    const line = document.createElement('div');
-    line.textContent = msg;
-    debugBox.appendChild(line);
-    // limit debug lines
-    while (debugBox.children.length > 50) {
-      debugBox.removeChild(debugBox.firstChild);
-    }
-    debugBox.scrollTop = debugBox.scrollHeight;
-  }
-
-  /************************************************************
-   * BLE CONNECTION LOGIC
-   ************************************************************/
-  async function connect() {
-    try {
-      // Web Bluetooth device chooser
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: 'FiddleStIX_V1' }],
-        optionalServices: [UART_SERVICE_UUID]
-      });
-
-      device.addEventListener('gattserverdisconnected', onDisconnected);
-
-      server = await device.gatt.connect();
-      uartService = await server.getPrimaryService(UART_SERVICE_UUID);
-      rxChar = await uartService.getCharacteristic(UART_RX_CHAR_UUID);
-      txChar = await uartService.getCharacteristic(UART_TX_CHAR_UUID);
-
-      await txChar.startNotifications();
-      txChar.addEventListener('characteristicvaluechanged', handleNotifications);
-
-      setConnectedUI(true);
-      logDebug('Connected to FiddleStIX_V1');
-
-    } catch (err) {
-      console.error('BLE connect error', err);
-      alert('BLE connection failed: ' + err);
-      setConnectedUI(false);
-    }
-  }
-
-  async function disconnect() {
-    try {
-      if (device && device.gatt.connected) {
-        await device.gatt.disconnect();
-      }
-    } catch (err) {
-      console.error('BLE disconnect error', err);
-    } finally {
-      setConnectedUI(false);
-      logDebug('Disconnected');
-    }
-  }
-
-  function onDisconnected() {
-    console.log('Device disconnected');
-    setConnectedUI(false);
-    logDebug('Device disconnected (GATT)');
-  }
-
-  /************************************************************
-   * RECEIVING TELEMETRY OVER BLE
-   * The device sends ASCII lines:
-   *   TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state\n
-   *
-   * Notifications may contain partial lines, so we accumulate
-   * chunks into rxBuffer and split on '\n'.
-   ************************************************************/
-  let rxBuffer = '';
-
-  function handleNotifications(event) {
-    const value = event.target.value;
-    const decoder = new TextDecoder('utf-8');
-    const chunk = decoder.decode(value);
-
-    // Append chunk to buffer
-    rxBuffer += chunk;
-
-    // Process all complete lines
-    let newlineIndex;
-    while ((newlineIndex = rxBuffer.indexOf('\n')) !== -1) {
-      const line = rxBuffer.slice(0, newlineIndex).trim();
-      rxBuffer = rxBuffer.slice(newlineIndex + 1);
-
-      if (!line) continue;
-
-      // For debugging: see lines in console + debug div
-      logDebug('RX: ' + line);
-
-      if (line.startsWith('TEL,')) {
-        parseTelemetryLine(line);
-      } else {
-        // Some other message (not used yet)
-      }
-    }
-  }
-
-  // Parse one telemetry line and feed data into graphs + status labels
-  function parseTelemetryLine(line) {
-    // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
-    const parts = line.split(',');
-    if (parts.length < 12) return;
-
-    const ms = parseInt(parts[1]);
-    const ax = parseFloat(parts[2]);
-    const ay = parseFloat(parts[3]);
-    const az = parseFloat(parts[4]);
-    const gx = parseFloat(parts[5]);
-    const gy = parseFloat(parts[6]);
-    const gz = parseFloat(parts[7]);
-    const mic = parseFloat(parts[8]);
-    const list = parseInt(parts[9]);
-    const pattern = parseInt(parts[10]);
-    const state = parseInt(parts[11]);
-
-    // Push to graphs
-    pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
-
-    // Update state labels
-    stateLabel.textContent = stateNameFromId(state);
-    listLabel.textContent = list.toString();
-    patternLabel.textContent = pattern.toString();
-
-    // Keep UI slider + list highlight roughly in sync
-    patternSlider.value = pattern;
-    patternSliderVal.textContent = pattern.toString();
-    highlightActiveList(list);
-  }
-
-  /************************************************************
-   * SENDING COMMANDS OVER BLE UART
-   * Commands are one-line ASCII strings ending in '\n'
-   ************************************************************/
-  async function sendCommand(str) {
-    if (!rxChar) {
-      alert('Not connected to device');
-      return;
-    }
-    const data = new TextEncoder().encode(str + '\n');
-    try {
-      await rxChar.writeValue(data);
-      logDebug('TX: ' + str);
-    } catch (err) {
-      console.error('sendCommand error', err);
-      logDebug('sendCommand error: ' + err);
-    }
-  }
-
-  /************************************************************
-   * UI EVENT HOOKS
-   ************************************************************/
-  // Connect/disconnect toggle button
-  connectBtn.addEventListener('click', () => {
-    if (device && device.gatt && device.gatt.connected) {
-      disconnect();
-    } else {
-      connect();
+      deviceA.connect();
     }
   });
 
-  // Control buttons -> send CMD:... lines
+  document.getElementById('connectBtnB').addEventListener('click', () => {
+    if (deviceB.isConnected) {
+      deviceB.disconnect();
+    } else {
+      deviceB.connect();
+    }
+  });
+
+  /************************************************************
+   * BROADCAST COMMANDS TO ALL CONNECTED DEVICES
+   ************************************************************/
+  async function broadcastCommand(str) {
+    // Send command to each connected device
+    for (const dev of devices) {
+      if (dev.isConnected) {
+        dev.sendCommand(str);
+      }
+    }
+  }
+
+  /************************************************************
+   * HOOK GLOBAL CONTROL BUTTONS
+   * - All buttons have data-cmd attributes like CMD:NEXT_LIST
+   * - When clicked, we broadcast that command to all devices.
+   ************************************************************/
   document.querySelectorAll('.controls-grid button').forEach(btn => {
     btn.addEventListener('click', () => {
       const cmd = btn.dataset.cmd;
-      if (cmd) sendCommand(cmd);
+      if (cmd) broadcastCommand(cmd);
     });
   });
 
-  // Pattern slider -> SET:PATTERN:...
+  /************************************************************
+   * SLIDERS + FLAGS
+   * - Their values are broadcast via SET: commands.
+   ************************************************************/
+  const patternSlider = document.getElementById('patternSlider');
+  const patternSliderVal = document.getElementById('patternSliderVal');
   patternSlider.addEventListener('input', () => {
     patternSliderVal.textContent = patternSlider.value;
   });
   patternSlider.addEventListener('change', () => {
-    sendCommand(`SET:PATTERN:${patternSlider.value}`);
+    broadcastCommand(`SET:PATTERN:${patternSlider.value}`);
   });
 
-  // Brightness slider -> SET:BRIGHT:...
+  const brightSlider = document.getElementById('brightSlider');
+  const brightSliderVal = document.getElementById('brightSliderVal');
   brightSlider.addEventListener('input', () => {
     brightSliderVal.textContent = brightSlider.value;
   });
   brightSlider.addEventListener('change', () => {
-    sendCommand(`SET:BRIGHT:${brightSlider.value}`);
+    broadcastCommand(`SET:BRIGHT:${brightSlider.value}`);
   });
 
-  // Shuffle dwell time slider -> SET:SHUFFLE_T:...
+  const shuffleSlider = document.getElementById('shuffleSlider');
+  const shuffleSliderVal = document.getElementById('shuffleSliderVal');
   shuffleSlider.addEventListener('input', () => {
     shuffleSliderVal.textContent = shuffleSlider.value;
   });
   shuffleSlider.addEventListener('change', () => {
-    sendCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
+    broadcastCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
   });
 
-  // Boolean flags -> SET:BOOL:...:...
+  const shuffleFlag = document.getElementById('shuffleFlag');
+  const sleepTimerFlag = document.getElementById('sleepTimerFlag');
+  const powerLockFlag = document.getElementById('powerLockFlag');
+
   shuffleFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
+    broadcastCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
   });
   sleepTimerFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
+    broadcastCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
   });
   powerLockFlag.addEventListener('change', () => {
-    sendCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
+    broadcastCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
   });
+
+  /************************************************************
+   * CHART REFRESH LOOP
+   * - Each device maintains its own buffers.
+   * - We just ask each to update its charts periodically.
+   ************************************************************/
+  setInterval(() => {
+    deviceA.updateCharts();
+    deviceB.updateCharts();
+  }, 200);
 </script>
 </body>
 </html>
