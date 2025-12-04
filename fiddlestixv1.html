@@ -138,12 +138,6 @@
       font-size: 0.85rem;
     }
 
-    .status-line {
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 0.25rem;
-    }
-
     .device-status-block {
       margin-top: 0.5rem;
       padding: 0.4rem 0.5rem;
@@ -200,18 +194,18 @@
 <header>
   <h1>FiddleStIX V1 Dual Control</h1>
   <div class="header-right">
-    <!-- Separate connect buttons for two devices -->
+    <!-- Separate connect buttons for Device #1 and Device #2 -->
     <button id="connectBtnA">Connect #1</button>
     <button id="connectBtnB">Connect #2</button>
   </div>
 </header>
 
 <main>
-  <!-- LEFT SIDE: Shared controls (broadcast to both devices) + per-device status/debug -->
+  <!-- LEFT: Controls + device status/debug -->
   <section id="controlSection">
-    <h2>Controls (Apply to All Connected Devices)</h2>
+    <h2>Controls (Broadcast to All Connected Devices)</h2>
 
-    <!-- GLOBAL control buttons (send CMD:... to both devices) -->
+    <!-- CONTROL BUTTONS (map directly to CMD:... strings the firmware understands) -->
     <div class="controls-grid">
       <button data-cmd="CMD:PREV_LIST">Previous Page</button>
       <button data-cmd="CMD:NEXT_LIST">Next Page</button>
@@ -224,38 +218,38 @@
 
     <hr style="border: none; border-top: 1px solid #333; margin: 1rem 0;">
 
-    <!-- List selection circles (single set, commands go to both devices) -->
+    <!-- LIST SELECTOR CIRCLES (SET:LIST:n broadcast) -->
     <div class="row">
       <label>Lists</label>
       <div class="list-circles" id="listCircles"></div>
     </div>
 
-    <!-- Pattern slider (SET:PATTERN applies to all connected devices) -->
+    <!-- PATTERN SLIDER (SET:PATTERN:n broadcast) -->
     <div class="row">
       <label>Pattern #</label>
       <input type="range" id="patternSlider" min="0" max="99" value="0">
       <span class="value" id="patternSliderVal">0</span>
     </div>
 
-    <!-- Global brightness slider (SET:BRIGHT applies to all connected devices) -->
+    <!-- BRIGHTNESS SLIDER (SET:BRIGHT:n broadcast) -->
     <div class="row">
       <label>Brightness</label>
       <input type="range" id="brightSlider" min="0" max="7" value="7">
       <span class="value" id="brightSliderVal">7</span>
     </div>
 
-    <!-- Shuffle dwell time slider (SET:SHUFFLE_T applies to all connected devices) -->
+    <!-- SHUFFLE DWELL TIME (SET:SHUFFLE_T:ms) -->
     <div class="row">
       <label>Shuffle T (ms)</label>
-      <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="5000">
-      <span class="value" id="shuffleSliderVal">5000</span>
+      <input type="range" id="shuffleSlider" min="500" max="30000" step="500" value="3000">
+      <span class="value" id="shuffleSliderVal">3000</span>
     </div>
 
-    <!-- Boolean flags (we broadcast both old-style SET:BOOL:... and CFG,... for safety) -->
+    <!-- BOOLEAN FLAGS (SET:BOOL:...:0/1) -->
     <div>
       <h2>Flags</h2>
       <div class="bool-toggle">
-        <input type="checkbox" id="shuffleFlag">
+        <input type="checkbox" id="shuffleFlag" checked>
         <label for="shuffleFlag">Shuffle (shuffle_P)</label>
       </div>
       <div class="bool-toggle">
@@ -268,7 +262,7 @@
       </div>
     </div>
 
-    <!-- PER-DEVICE STATUS INFO (updated from TEL lines) -->
+    <!-- PER-DEVICE STATUS BLOCKS -->
     <div class="device-status-block">
       <strong>Device #1 Status</strong><br>
       State: <span id="stateLabelA">Unknown</span> ·
@@ -286,30 +280,30 @@
     </div>
   </section>
 
-  <!-- RIGHT SIDE: 6 graphs total (3 per device) -->
+  <!-- RIGHT: Graphs -->
   <section id="graphsSection">
     <h2>Sensor Graphs (Last ~30s)</h2>
 
     <div class="graphs-grid">
-      <!-- Device #1 graphs -->
+      <!-- DEVICE #1 GRAPHS -->
       <div class="device-graphs">
         <h3>Device #1</h3>
         <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
         <canvas id="gyroCanvasA" height="100"></canvas>
         <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Accel (ax, ay, az)</div>
         <canvas id="accelCanvasA" height="100"></canvas>
-        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic Level</div>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic RMS</div>
         <canvas id="micCanvasA" height="100"></canvas>
       </div>
 
-      <!-- Device #2 graphs -->
+      <!-- DEVICE #2 GRAPHS -->
       <div class="device-graphs">
         <h3>Device #2</h3>
         <div style="font-size:0.8rem; color:#aaa; margin-bottom:0.2rem;">Gyro (gx, gy, gz)</div>
         <canvas id="gyroCanvasB" height="100"></canvas>
         <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Accel (ax, ay, az)</div>
         <canvas id="accelCanvasB" height="100"></canvas>
-        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic Level</div>
+        <div style="font-size:0.8rem; color:#aaa; margin:0.4rem 0 0.2rem;">Mic RMS</div>
         <canvas id="micCanvasB" height="100"></canvas>
       </div>
     </div>
@@ -317,60 +311,75 @@
 </main>
 
 <script>
-  /************************************************************
-   * BLE UART UUIDs (Nordic / Adafruit UART)
-   * - These must match the service/characteristic UUIDs used
-   *   by the firmware's Bluefruit UART service.
-   ************************************************************/
+  /********************************************************************
+   * BLE UART UUIDs
+   * These match Adafruit / Nordic NUS (used by Bluefruit BLEUart).
+   ********************************************************************/
   const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write from browser -> device
+  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from device -> browser
 
-  // Number of points to keep in history (~600 → ~30 seconds @ 20Hz)
-  const MAX_POINTS = 600;
+  // How many points to keep for ~30s history.
+  // Firmware sends telemetry at 40 Hz => 30s ≈ 1200 samples.
+  // We'll cap at 1200.
+  const MAX_POINTS = 1200;
 
-  /************************************************************
-   * Helper: clamp array length to MAX_POINTS
-   * - Ensures our time series buffers don't grow without bound.
-   ************************************************************/
   function trimArray(arr) {
     while (arr.length > MAX_POINTS) arr.shift();
   }
 
-  /************************************************************
-   * Class representing one FiddleStIX device connection
-   * - Handles BLE connect, notifications, telemetry parsing
-   * - Maintains its own data buffers + charts
-   * - Updates its own status labels + debug box
-   ************************************************************/
+  /********************************************************************
+   * Helper: Map firmware state IDs to readable strings
+   * Must match DeviceState enum in the INO.
+   ********************************************************************/
+  function stateNameFromId(id) {
+    switch (id) {
+      case 0: return 'OFF';
+      case 1: return 'PLAY';
+      case 2: return 'SLEEP';
+      case 3: return 'SHUFFLE';
+      case 4: return 'PAIRING';
+      case 5: return 'L_SELECT';
+      case 6: return 'B_SELECT';
+      case 7: return 'T_SELECT';
+      default: return '?';
+    }
+  }
+
+  /********************************************************************
+   * Class representing a single FiddleStIX device
+   * - Manages BLE connection, notifications
+   * - Parses telemetry lines
+   * - Maintains data buffers + charts
+   * - Updates its own status UI
+   ********************************************************************/
   class FiddleDevice {
     constructor(idLetter) {
-      // idLetter: 'A' or 'B'
-      this.id = idLetter;
+      this.id = idLetter;           // 'A' or 'B'
 
       // BLE objects
       this.device = null;
       this.server = null;
       this.uartService = null;
-      this.rxChar = null;  // write characteristic
-      this.txChar = null;  // notify characteristic
+      this.rxChar = null;          // Write characteristic (browser -> device)
+      this.txChar = null;          // Notify characteristic (device -> browser)
 
-      // For line-assembly of incoming notifications
+      // Incrementally build lines from BLE notifications
       this.rxBuffer = '';
 
-      // UI references unique to this device
-      this.stateLabel = document.getElementById('stateLabel' + idLetter);
-      this.listLabel  = document.getElementById('listLabel' + idLetter);
+      // UI elements specific to this device
+      this.stateLabel   = document.getElementById('stateLabel' + idLetter);
+      this.listLabel    = document.getElementById('listLabel' + idLetter);
       this.patternLabel = document.getElementById('patternLabel' + idLetter);
-      this.debugBox = document.getElementById('debugBox' + idLetter);
-      this.connectBtn = document.getElementById('connectBtn' + idLetter);
+      this.debugBox     = document.getElementById('debugBox' + idLetter);
+      this.connectBtn   = document.getElementById('connectBtn' + idLetter);
 
-      // Data buffers for charts
+      // Data buffers for graphs (time-series)
       this.gyroData = { t: [], gx: [], gy: [], gz: [] };
       this.accelData = { t: [], ax: [], ay: [], az: [] };
       this.micData = { t: [], mic: [] };
 
-      // Create charts for this device
+      // Build Chart.js line charts
       this.gyroChart = new Chart(
         document.getElementById('gyroCanvas' + idLetter).getContext('2d'),
         {
@@ -436,7 +445,7 @@
           data: {
             labels: this.micData.t,
             datasets: [
-              { label: 'mic', data: this.micData.mic, borderWidth: 1, pointRadius: 0 }
+              { label: 'mic RMS', data: this.micData.mic, borderWidth: 1, pointRadius: 0 }
             ]
           },
           options: {
@@ -458,8 +467,8 @@
     }
 
     /***********************
-     * LOGGING TO UI + CONSOLE
-     * - Shows what's happening per-device.
+     * Logging helper
+     * - Writes to console and per-device debug box.
      ***********************/
     log(msg) {
       console.log(`[${this.id}] ${msg}`);
@@ -467,34 +476,35 @@
       const line = document.createElement('div');
       line.textContent = msg;
       this.debugBox.appendChild(line);
-      while (this.debugBox.children.length > 30) {
+      while (this.debugBox.children.length > 50) {
         this.debugBox.removeChild(this.debugBox.firstChild);
       }
       this.debugBox.scrollTop = this.debugBox.scrollHeight;
     }
 
     /***********************
-     * CONNECT / DISCONNECT
-     * - Web Bluetooth pairing and GATT setup.
+     * Connect / disconnect
      ***********************/
     async connect() {
       try {
-        // Request device whose name starts with "FiddleStIX_V1"
+        // Ask user to select a device named FiddleStIX_V1
         this.device = await navigator.bluetooth.requestDevice({
           filters: [{ namePrefix: 'FiddleStIX_V1' }],
           optionalServices: [UART_SERVICE_UUID]
         });
-
         this.device.addEventListener('gattserverdisconnected', () => this.onDisconnected());
 
         this.server = await this.device.gatt.connect();
         this.uartService = await this.server.getPrimaryService(UART_SERVICE_UUID);
+
         this.rxChar = await this.uartService.getCharacteristic(UART_RX_CHAR_UUID);
         this.txChar = await this.uartService.getCharacteristic(UART_TX_CHAR_UUID);
 
-        // Start notifications from TX characteristic (device → browser)
+        // Enable notifications for UART TX (device -> browser)
         await this.txChar.startNotifications();
-        this.txChar.addEventListener('characteristicvaluechanged', (evt) => this.handleNotifications(evt));
+        this.txChar.addEventListener('characteristicvaluechanged',
+          (evt) => this.handleNotifications(evt)
+        );
 
         this.setConnectedUI(true);
         this.log('Connected to FiddleStIX_V1');
@@ -540,20 +550,17 @@
     }
 
     /***********************
-     * RECEIVING TELEMETRY
-     * - Device sends ASCII lines:
-     *   TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state\n
-     * - Notifications may contain partial lines, so we buffer.
+     * Handle incoming BLE notifications
+     * - Data arrives as binary.
+     * - We decode to text, accumulate into rxBuffer,
+     *   then split on '\n' to process complete lines.
      ***********************/
     handleNotifications(event) {
       const value = event.target.value;
       const decoder = new TextDecoder('utf-8');
       const chunk = decoder.decode(value);
-
-      // Append chunk to our per-device buffer
       this.rxBuffer += chunk;
 
-      // Extract and process each full line
       let newlineIndex;
       while ((newlineIndex = this.rxBuffer.indexOf('\n')) !== -1) {
         const line = this.rxBuffer.slice(0, newlineIndex).trim();
@@ -561,44 +568,53 @@
 
         if (!line) continue;
 
+        // For debugging, log every line you receive:
         this.log('RX: ' + line);
 
         if (line.startsWith('TEL,')) {
-          this.parseTelemetryLine(line);
+          this.parseTelemetry(line);
         } else {
-          // Other text (unused for now)
+          // Other text types can be handled here.
         }
       }
     }
 
-    parseTelemetryLine(line) {
-      // Expected format:
-      // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
+    /***********************
+     * Parse telemetry line
+     * Firmware format:
+     *   TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
+     ***********************/
+    parseTelemetry(line) {
       const parts = line.split(',');
-      if (parts.length < 12) return;
+      if (parts.length < 12) {
+        this.log('Telemetry parse error (too few fields)');
+        return;
+      }
 
-      const ms = parseInt(parts[1]);
-      const ax = parseFloat(parts[2]);
-      const ay = parseFloat(parts[3]);
-      const az = parseFloat(parts[4]);
-      const gx = parseFloat(parts[5]);
-      const gy = parseFloat(parts[6]);
-      const gz = parseFloat(parts[7]);
-      const mic = parseFloat(parts[8]);
-      const list = parseInt(parts[9]);
+      const ms      = parseInt(parts[1]);
+      const ax      = parseFloat(parts[2]);
+      const ay      = parseFloat(parts[3]);
+      const az      = parseFloat(parts[4]);
+      const gx      = parseFloat(parts[5]);
+      const gy      = parseFloat(parts[6]);
+      const gz      = parseFloat(parts[7]);
+      const mic     = parseFloat(parts[8]);
+      const list    = parseInt(parts[9]);
       const pattern = parseInt(parts[10]);
-      const state = parseInt(parts[11]);
+      const state   = parseInt(parts[11]);
 
-      // Store into our time-series buffers
+      // Push new sample into local buffers
       this.pushSensorData(ms, ax, ay, az, gx, gy, gz, mic);
 
-      // Update per-device status labels
-      this.stateLabel.textContent = stateNameFromId(state);
-      this.listLabel.textContent = list.toString();
+      // Update labels
+      this.stateLabel.textContent   = stateNameFromId(state);
+      this.listLabel.textContent    = list.toString();
       this.patternLabel.textContent = pattern.toString();
     }
 
-    // Add new sample to this device's buffers
+    /***********************
+     * Store sample into buffers, trim to MAX_POINTS
+     ***********************/
     pushSensorData(ms, ax, ay, az, gx, gy, gz, mic) {
       this.gyroData.t.push(ms);
       this.gyroData.gx.push(gx);
@@ -627,32 +643,35 @@
       trimArray(this.micData.mic);
     }
 
-    // Refresh charts from latest buffer contents
+    /***********************
+     * Update Chart.js objects with latest buffers
+     * (called on a timer)
+     ***********************/
     updateCharts() {
-      // Gyro
+      // Gyro (gx,gy,gz)
       this.gyroChart.data.labels = this.gyroData.t;
       this.gyroChart.data.datasets[0].data = this.gyroData.gx;
       this.gyroChart.data.datasets[1].data = this.gyroData.gy;
       this.gyroChart.data.datasets[2].data = this.gyroData.gz;
       this.gyroChart.update('none');
 
-      // Accel
+      // Accel (ax,ay,az)
       this.accelChart.data.labels = this.accelData.t;
       this.accelChart.data.datasets[0].data = this.accelData.ax;
       this.accelChart.data.datasets[1].data = this.accelData.ay;
       this.accelChart.data.datasets[2].data = this.accelData.az;
       this.accelChart.update('none');
 
-      // Mic
+      // Mic RMS
       this.micChart.data.labels = this.micData.t;
       this.micChart.data.datasets[0].data = this.micData.mic;
       this.micChart.update('none');
     }
 
     /***********************
-     * SENDING COMMANDS
-     * - str should be like "CMD:..." or "SET:..." or "CFG,..."
-     * - We add '\n' before sending over RX characteristic
+     * Send a command string to this device
+     * - str is something like "CMD:NEXT_PATTERN" or "SET:BRIGHT:5"
+     * - Firmware expects newline-terminated strings.
      ***********************/
     async sendCommand(str) {
       if (!this.rxChar || !this.isConnected) return;
@@ -667,50 +686,28 @@
     }
   }
 
-  /************************************************************
-   * Helper: map state ID to human-readable name
-   * - Must match the enum in the firmware.
-   ************************************************************/
-  function stateNameFromId(id) {
-    switch (id) {
-      case 0: return 'OFF';
-      case 1: return 'PLAY';
-      case 2: return 'SLEEP';
-      case 3: return 'SHUFFLE';
-      case 4: return 'PAIRING';
-      case 5: return 'L_SELECT';
-      case 6: return 'B_SELECT';
-      case 7: return 'T_SELECT';
-      default: return '?';
-    }
-  }
-
-  /************************************************************
-   * Instantiate two device controllers: A (Device #1) and B (#2)
-   ************************************************************/
+  /********************************************************************
+   * Instantiate two device controllers: A and B
+   ********************************************************************/
   const deviceA = new FiddleDevice('A');
   const deviceB = new FiddleDevice('B');
+  const devices = [deviceA, deviceB]; // convenience for broadcasting
 
-  // For convenience, keep them in an array when broadcasting commands
-  const devices = [deviceA, deviceB];
-
-  /************************************************************
-   * LIST CIRCLES
-   * - Single set of colored dots, one per list index (0–8).
-   * - When clicked, sends SET:LIST:n to all connected devices.
-   ************************************************************/
+  /********************************************************************
+   * Build list selector circles (single set, broadcast SET:LIST:n)
+   ********************************************************************/
   const listCirclesContainer = document.getElementById('listCircles');
 
   const listColors = [
-    '#ffffff', // LIST_WHITE
-    '#ff0000', // LIST_RED
-    '#ff7f00', // LIST_ORANGE
-    '#ffff00', // LIST_YELLOW
-    '#00ff00', // LIST_GREEN
-    '#0000ff', // LIST_BLUE
-    '#4b0082', // LIST_INDIGO
-    '#ee82ee', // LIST_VIOLET
-    '#000000'  // LIST_BLACK (reserved)
+    '#ffffff', // 0 WHITE
+    '#ff0000', // 1 RED
+    '#ff7f00', // 2 ORANGE
+    '#ffff00', // 3 YELLOW
+    '#00ff00', // 4 GREEN
+    '#0000ff', // 5 BLUE
+    '#4b0082', // 6 INDIGO
+    '#ee82ee', // 7 VIOLET
+    '#000000'  // 8 BLACK (stub)
   ];
 
   function buildListCircles() {
@@ -722,7 +719,6 @@
       div.title = `List ${idx}`;
       div.dataset.listIndex = idx.toString();
       div.addEventListener('click', () => {
-        // Broadcast list change to all connected devices
         broadcastCommand(`SET:LIST:${idx}`);
         highlightActiveList(idx);
       });
@@ -730,7 +726,6 @@
     });
   }
 
-  // For now, highlight the last list index we commanded (not per-device)
   function highlightActiveList(idx) {
     Array.from(listCirclesContainer.children).forEach((child, i) => {
       child.classList.toggle('active', i === idx);
@@ -739,43 +734,32 @@
 
   buildListCircles();
 
-  /************************************************************
-   * CONNECT BUTTON HANDLERS
-   * - Each button toggles connect/disconnect for that device.
-   ************************************************************/
+  /********************************************************************
+   * Connect button handlers
+   ********************************************************************/
   document.getElementById('connectBtnA').addEventListener('click', () => {
-    if (deviceA.isConnected) {
-      deviceA.disconnect();
-    } else {
-      deviceA.connect();
-    }
+    if (deviceA.isConnected) deviceA.disconnect();
+    else deviceA.connect();
   });
 
   document.getElementById('connectBtnB').addEventListener('click', () => {
-    if (deviceB.isConnected) {
-      deviceB.disconnect();
-    } else {
-      deviceB.connect();
-    }
+    if (deviceB.isConnected) deviceB.disconnect();
+    else deviceB.connect();
   });
 
-  /************************************************************
-   * BROADCAST COMMANDS TO ALL CONNECTED DEVICES
-   * - Used for all shared controls (buttons, sliders, flags).
-   ************************************************************/
-  async function broadcastCommand(str) {
+  /********************************************************************
+   * Broadcast helper: send a command to all connected devices
+   ********************************************************************/
+  function broadcastCommand(str) {
     for (const dev of devices) {
-      if (dev.isConnected) {
-        dev.sendCommand(str);
-      }
+      if (dev.isConnected) dev.sendCommand(str);
     }
   }
 
-  /************************************************************
-   * HOOK GLOBAL CONTROL BUTTONS
-   * - All buttons have data-cmd attributes like CMD:NEXT_LIST
-   * - When clicked, we broadcast that command to all devices.
-   ************************************************************/
+  /********************************************************************
+   * Attach click handlers to the control buttons
+   * - Each button has data-cmd="CMD:...".
+   ********************************************************************/
   document.querySelectorAll('.controls-grid button').forEach(btn => {
     btn.addEventListener('click', () => {
       const cmd = btn.dataset.cmd;
@@ -783,13 +767,10 @@
     });
   });
 
-  /************************************************************
+  /********************************************************************
    * SLIDERS + FLAGS
-   * - Their values are broadcast via SET: commands.
-   * - For shuffle/sleepTimer/powerLock we ALSO send CFG,...
-   *   so the firmware can directly update config variables
-   *   (e.g. shuffle_P, userConfig.sleepTimer, powerLock).
-   ************************************************************/
+   ********************************************************************/
+  // Pattern slider -> SET:PATTERN:n
   const patternSlider = document.getElementById('patternSlider');
   const patternSliderVal = document.getElementById('patternSliderVal');
   patternSlider.addEventListener('input', () => {
@@ -799,6 +780,7 @@
     broadcastCommand(`SET:PATTERN:${patternSlider.value}`);
   });
 
+  // Brightness slider -> SET:BRIGHT:n
   const brightSlider = document.getElementById('brightSlider');
   const brightSliderVal = document.getElementById('brightSliderVal');
   brightSlider.addEventListener('input', () => {
@@ -808,6 +790,7 @@
     broadcastCommand(`SET:BRIGHT:${brightSlider.value}`);
   });
 
+  // Shuffle dwell time -> SET:SHUFFLE_T:ms
   const shuffleSlider = document.getElementById('shuffleSlider');
   const shuffleSliderVal = document.getElementById('shuffleSliderVal');
   shuffleSlider.addEventListener('input', () => {
@@ -815,42 +798,27 @@
   });
   shuffleSlider.addEventListener('change', () => {
     broadcastCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
-    // Optional: if firmware supports CFG for shuffle_T as well
-    broadcastCommand(`CFG,SHUFFLE_T,${shuffleSlider.value}`);
   });
 
+  // Bool flags -> SET:BOOL:...:0/1
   const shuffleFlag = document.getElementById('shuffleFlag');
   const sleepTimerFlag = document.getElementById('sleepTimerFlag');
   const powerLockFlag = document.getElementById('powerLockFlag');
 
-  // Shuffle flag:
-  // - Old style: SET:BOOL:shuffle:0/1
-  // - New style: CFG,SHUFFLE_P,0/1  (expected by firmware's shuffle_P)
   shuffleFlag.addEventListener('change', () => {
-    const val = shuffleFlag.checked ? 1 : 0;
-    broadcastCommand(`SET:BOOL:shuffle:${val}`);
-    broadcastCommand(`CFG,SHUFFLE_P,${val}`);
+    broadcastCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
   });
-
-  // Sleep timer flag (assuming firmware might use CFG,SLEEP_TIMER,0/1)
   sleepTimerFlag.addEventListener('change', () => {
-    const val = sleepTimerFlag.checked ? 1 : 0;
-    broadcastCommand(`SET:BOOL:sleepTimer:${val}`);
-    broadcastCommand(`CFG,SLEEP_TIMER,${val}`);
+    broadcastCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
   });
-
-  // Power lock flag (assuming firmware might use CFG,POWER_LOCK,0/1)
   powerLockFlag.addEventListener('change', () => {
-    const val = powerLockFlag.checked ? 1 : 0;
-    broadcastCommand(`SET:BOOL:powerLock:${val}`);
-    broadcastCommand(`CFG,POWER_LOCK,${val}`);
+    broadcastCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
   });
 
-  /************************************************************
-   * CHART REFRESH LOOP
-   * - Each device maintains its own buffers.
-   * - We just ask each to update its charts periodically.
-   ************************************************************/
+  /********************************************************************
+   * Chart refresh loop
+   * - Telemetry is ~40 Hz; we redraw charts every 200 ms to save CPU.
+   ********************************************************************/
   setInterval(() => {
     deviceA.updateCharts();
     deviceB.updateCharts();
