@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>LEDStyx Control GUI</title>
+  <title>FiddleStIX V1 Control</title>
   <style>
     body {
       background: #050510;
@@ -10,9 +10,10 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       padding: 20px;
+      box-sizing: border-box;
     }
 
-    h1, h2 {
+    h1, h2, h3 {
       margin: 0 0 10px 0;
     }
 
@@ -21,22 +22,37 @@
     }
     h2 {
       font-size: 1.2rem;
-      margin-top: 20px;
+      margin-top: 10px;
+    }
+
+    .small {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #20253f;
+      color: #a2b1ff;
+      margin-left: 4px;
+    }
+
+    .card {
+      background: #111323;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
     }
 
     .flex-row {
       display: flex;
       flex-wrap: wrap;
       gap: 16px;
-      align-items: center;
-    }
-
-    .card {
-      background: #111323;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      align-items: flex-start;
     }
 
     .device-card {
@@ -67,15 +83,15 @@
       cursor: default;
     }
 
+    input[type="range"] {
+      width: 180px;
+    }
+
     .slider-row {
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 4px 0;
-    }
-
-    input[type="range"] {
-      width: 180px;
     }
 
     label {
@@ -103,11 +119,6 @@
       white-space: pre-wrap;
     }
 
-    .small {
-      font-size: 0.75rem;
-      opacity: 0.7;
-    }
-
     .row-spaced {
       display: flex;
       justify-content: space-between;
@@ -115,26 +126,70 @@
       flex-wrap: wrap;
     }
 
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
+    /* List selector circles */
+    .list-circles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .list-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
       font-size: 0.7rem;
-      background: #20253f;
-      color: #a2b1ff;
-      margin-left: 4px;
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    .list-circle.active {
+      box-shadow: 0 0 8px #ffffff;
+      border-color: #ffffff;
+    }
+
+    .list-circle.black {
+      background: #000;
+      color: #fff;
+    }
+
+    .list-circle.white { background: #ffffff; }
+    .list-circle.red   { background: #ff4b4b; }
+    .list-circle.orange{ background: #ffb347; }
+    .list-circle.yellow{ background: #ffe45e; }
+    .list-circle.green { background: #7CFC00; }
+    .list-circle.blue  { background: #4fa9ff; }
+    .list-circle.indigo{ background: #4b0082; color:#fff; }
+    .list-circle.violet{ background: #ee82ee; }
+
+    /* Graphs */
+    .graph-container {
+      flex: 1 1 260px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 150px;
+      background: #050713;
+      border-radius: 8px;
+      display: block;
     }
 
   </style>
 </head>
 <body>
-  <h1>LEDStyx Control GUI</h1>
+  <h1>FiddleStIX V1 Control</h1>
   <p class="small">
-    Connect up to two sticks and control them <strong>simultaneously</strong>.
+    Connect up to two ends of the stick and control them simultaneously via BLE UART.
     All controls send matching commands to every connected device.
   </p>
 
-  <!-- Device connection cards -->
+  <!-- Devices -->
   <div class="flex-row">
     <div class="card device-card">
       <h2>Stick A <span id="statusA" class="pill">disconnected</span></h2>
@@ -151,76 +206,93 @@
     </div>
   </div>
 
-  <!-- Pattern / list navigation -->
+  <!-- Lists & Patterns -->
   <div class="card">
     <h2>Lists &amp; Patterns</h2>
-    <div class="flex-row">
-      <div>
-        <p class="small">Quick list controls</p>
-        <button id="prevList">⟵ Prev List</button>
-        <button id="nextList">Next List ⟶</button>
-      </div>
 
-      <div>
-        <p class="small">Quick pattern controls</p>
-        <button id="prevPattern">⟵ Prev Pattern</button>
-        <button id="nextPattern">Next Pattern ⟶</button>
-      </div>
+    <div class="row-spaced">
+      <div style="flex:1 1 220px;">
+        <p class="small">Current state (GUI uses 1-based; device uses 0-based)</p>
+        <p class="small">
+          List: <span id="currentListLabel">?</span>
+          &nbsp; Pattern: <span id="currentPatternLabel">?</span>
+        </p>
 
-      <div>
-        <p class="small">Direct selection</p>
-        <div class="slider-row">
-          <label for="listIndex">List #</label>
-          <input id="listIndex" type="number" min="0" max="7" value="0" />
-          <button id="setList" class="secondary">SET:LIST</button>
+        <p class="small">Lists (click circle to jump):</p>
+        <div class="list-circles" id="listCircles">
+          <!-- index (internal) 0..8, GUI label 1..9 -->
+          <div class="list-circle white"  data-list="0" title="White">1</div>
+          <div class="list-circle red"    data-list="1" title="Red">2</div>
+          <div class="list-circle orange" data-list="2" title="Orange">3</div>
+          <div class="list-circle yellow" data-list="3" title="Yellow">4</div>
+          <div class="list-circle green"  data-list="4" title="Green">5</div>
+          <div class="list-circle blue"   data-list="5" title="Blue">6</div>
+          <div class="list-circle indigo" data-list="6" title="Indigo">7</div>
+          <div class="list-circle violet" data-list="7" title="Violet">8</div>
+          <div class="list-circle black"  data-list="8" title="Black / Off">9</div>
         </div>
+
+        <div style="margin-top:8px;">
+          <button id="prevList">Previous Page</button>
+          <button id="nextList">Next Page</button>
+        </div>
+
+      </div>
+
+      <div style="flex:1 1 220px;">
+        <p class="small">Pattern index (1-based GUI → 0-based device)</p>
         <div class="slider-row">
-          <label for="patternIndex">Pattern #</label>
-          <input id="patternIndex" type="number" min="0" max="19" value="0" />
-          <button id="setPattern" class="secondary">SET:PATTERN</button>
+          <label for="patternSlider">Pattern:</label>
+          <input id="patternSlider" type="range" min="1" max="20" value="1" />
+          <span id="patternSliderLabel">1</span>
+        </div>
+        <button id="setPattern">Set Pattern</button>
+
+        <div style="margin-top:8px;">
+          <button id="prevPattern">Previous Pattern</button>
+          <button id="nextPattern">Next Pattern</button>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button id="favorite" class="secondary">Favorite</button>
         </div>
       </div>
-    </div>
-
-    <div style="margin-top:8px;">
-      <button id="favorite" class="secondary">⭐ FAVORITE (Whitelist)</button>
     </div>
   </div>
 
-  <!-- Brightness & T controls -->
+  <!-- Brightness & Shuffle_T -->
   <div class="card">
     <h2>Brightness &amp; Shuffle Time</h2>
     <div class="row-spaced">
-
-      <div>
-        <p class="small">Global brightness (0–7 → <code>SET:BRIGHT</code>)</p>
+      <div style="flex:1 1 220px;">
+        <p class="small">Global brightness (GUI 1–8 → SET:BRIGHT 0–7)</p>
         <div class="slider-row">
           <label for="brightSlider">Brightness:</label>
-          <input id="brightSlider" type="range" min="0" max="7" value="4" />
-          <span id="brightLabel">4</span>
-          <button id="brightSend" class="secondary">Send</button>
+          <input id="brightSlider" type="range" min="1" max="8" value="5" />
+          <span id="brightLabel">5 (device: 4)</span>
         </div>
+        <button id="brightSend" class="secondary">Set Brightness</button>
       </div>
 
-      <div>
-        <p class="small">Shuffle T (seconds → ms, <code>SET:SHUFFLE_T</code>)</p>
+      <div style="flex:1 1 220px;">
+        <p class="small">Shuffle_T (0.5–10 s → ms; min 500 ms)</p>
         <div class="slider-row">
           <label for="tSlider">T (s):</label>
-          <!-- 0.5s to 10s, mapped to 500–10000 ms in code -->
+          <!-- 0.5..10.0 s, step 0.1 -->
           <input id="tSlider" type="range" min="5" max="100" value="30" />
           <span id="tLabel">3.0 s (3000 ms)</span>
-          <button id="tSend" class="secondary">Send</button>
         </div>
+        <button id="tSend" class="secondary">Set Shuffle_T</button>
       </div>
     </div>
   </div>
 
-  <!-- Flags / special commands -->
+  <!-- Booleans & Special commands -->
   <div class="card">
     <h2>Flags &amp; Special Modes</h2>
 
+    <p class="small">Boolean flags (SET:BOOL:&lt;name&gt;:&lt;0/1&gt;)</p>
     <div class="toggle-group">
-      <p class="small">Boolean flags (<code>SET:BOOL:name:0/1</code>)</p>
       <label>
         <input type="checkbox" id="flagShuffle" />
         shuffle
@@ -237,17 +309,42 @@
     </div>
 
     <div style="margin-top:10px;">
-      <button id="goSleep" class="secondary">💤 GO_SLEEP</button>
-      <button id="rave" class="secondary">🎉 RAVE</button>
+      <button id="goSleep" class="secondary">Go To Sleep</button>
+      <button id="rave" class="secondary">Rave O’Clock</button>
     </div>
   </div>
 
-  <!-- Raw / debug -->
+  <!-- Graphs -->
+  <div class="card">
+    <h2>Sensor Graphs (last 30 s)</h2>
+    <p class="small">
+      Expect firmware to send lines like:
+      <code>TEL:GYRO:x,y,z</code>,
+      <code>TEL:ACC:x,y,z</code>,
+      <code>TEL:MIC:val</code>.
+    </p>
+    <div class="flex-row">
+      <div class="graph-container">
+        <h3>Gyro</h3>
+        <canvas id="gyroCanvas" width="400" height="150"></canvas>
+      </div>
+      <div class="graph-container">
+        <h3>Acceleration</h3>
+        <canvas id="accelCanvas" width="400" height="150"></canvas>
+      </div>
+      <div class="graph-container">
+        <h3>Mic</h3>
+        <canvas id="micCanvas" width="400" height="150"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw & log -->
   <div class="card">
     <h2>Raw Command &amp; Log</h2>
     <div class="flex-row" style="align-items:flex-start;">
       <div style="flex:1 1 260px;">
-        <p class="small">Send a raw text line (e.g. <code>RAW:...</code>, <code>CMD:...</code>, <code>SET:...</code>)</p>
+        <p class="small">Send any raw line (<code>CMD:...</code>, <code>SET:...</code>, <code>RAW:...</code>)</p>
         <input id="rawInput" type="text" style="width:100%; margin-bottom:4px;" placeholder="e.g. CMD:NEXT_PATTERN" />
         <button id="rawSend">Send Raw</button>
       </div>
@@ -259,18 +356,26 @@
   </div>
 
   <script>
-    // === UUIDs for Adafruit Bluefruit UART service ===
+    // ===== BLE UART UUIDs (Adafruit / Bluefruit style) =====
     const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // central writes here
     const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // notifications from peripheral
 
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    // Per-stick connection state
+    // Up to 2 sticks
     const sticks = {
-      A: { device: null, server: null, txChar: null, rxChar: null },
-      B: { device: null, server: null, txChar: null, rxChar: null }
+      A: { device: null, server: null, txChar: null, rxChar: null, buffer: "" },
+      B: { device: null, server: null, txChar: null, rxChar: null, buffer: "" }
     };
+
+    // GUI-side notion of current indices (0-based)
+    let guiListIndex = null;
+    let guiPatternIndex = null;
+
+    const currentListLabel = document.getElementById("currentListLabel");
+    const currentPatternLabel = document.getElementById("currentPatternLabel");
 
     const logElem = document.getElementById("log");
 
@@ -280,6 +385,7 @@
       logElem.scrollTop = logElem.scrollHeight;
     }
 
+    // ===== Connection logic =====
     async function connectStick(key) {
       const statusElem = document.getElementById(`status${key}`);
       const infoElem = document.getElementById(`info${key}`);
@@ -287,17 +393,14 @@
       const disconnectBtn = document.getElementById(`disconnect${key}`);
 
       try {
-        // IMPORTANT: use filters *without* acceptAllDevices
         const device = await navigator.bluetooth.requestDevice({
           filters: [
             { services: [UART_SERVICE_UUID] }
-            // If you want to further restrict by name:
-            // { namePrefix: "LEDStyx" }
+            // optionally: { namePrefix: "FiddleStIX" }
           ]
         });
 
         sticks[key].device = device;
-
         device.addEventListener("gattserverdisconnected", () => {
           log(`Stick ${key}: disconnected`);
           statusElem.textContent = "disconnected";
@@ -306,21 +409,20 @@
           connectBtn.disabled = false;
         });
 
-        log(`Stick ${key}: connecting to GATT server...`);
+        log(`Stick ${key}: connecting...`);
         const server = await device.gatt.connect();
         sticks[key].server = server;
 
         const service = await server.getPrimaryService(UART_SERVICE_UUID);
         const txChar = await service.getCharacteristic(UART_TX_UUID);
         const rxChar = await service.getCharacteristic(UART_RX_UUID);
-
         sticks[key].txChar = txChar;
         sticks[key].rxChar = rxChar;
 
         await rxChar.startNotifications();
         rxChar.addEventListener("characteristicvaluechanged", event => {
-          const value = new TextDecoder().decode(event.target.value);
-          log(`RX (${key}): ${value.trim()}`);
+          const chunk = decoder.decode(event.target.value);
+          handleRxChunk(key, chunk);
         });
 
         statusElem.textContent = "connected";
@@ -330,7 +432,7 @@
 
         log(`Stick ${key}: connected`);
       } catch (err) {
-        log(`Stick ${key}: ERROR during connect: ${err.message || err}`);
+        log(`Stick ${key}: ERROR ${err.message || err}`);
       }
     }
 
@@ -340,11 +442,26 @@
         log(`Stick ${key}: disconnecting...`);
         s.device.gatt.disconnect();
       }
-      sticks[key] = { device: null, server: null, txChar: null, rxChar: null };
+      sticks[key] = { device: null, server: null, txChar: null, rxChar: null, buffer: "" };
       document.getElementById(`status${key}`).textContent = "disconnected";
       document.getElementById(`info${key}`).textContent = "";
       document.getElementById(`disconnect${key}`).disabled = true;
       document.getElementById(`connect${key}`).disabled = false;
+    }
+
+    // Handle RX chunks, splitting into lines
+    function handleRxChunk(key, chunk) {
+      const s = sticks[key];
+      s.buffer += chunk;
+      let idx;
+      while ((idx = s.buffer.indexOf("\n")) >= 0) {
+        const line = s.buffer.slice(0, idx).trim();
+        s.buffer = s.buffer.slice(idx + 1);
+        if (line.length > 0) {
+          log(`RX (${key}): ${line}`);
+          handleIncomingLine(line);
+        }
+      }
     }
 
     // Send a command line to all connected sticks
@@ -353,7 +470,6 @@
       log(`TX: ${line}`);
 
       const promises = [];
-
       for (const key of ["A", "B"]) {
         const tx = sticks[key].txChar;
         if (tx) {
@@ -364,7 +480,6 @@
           );
         }
       }
-
       if (promises.length === 0) {
         log("⚠ No sticks connected; command not sent.");
       } else {
@@ -372,65 +487,342 @@
       }
     }
 
-    // === Wire up buttons ===
+    // ===== Telemetry & status parsing =====
+    // Expected formats (you can match in firmware):
+    //   TEL:GYRO:x,y,z
+    //   TEL:ACC:x,y,z
+    //   TEL:MIC:value
+    //   STAT:LIST:n          (0-based)
+    //   STAT:PATTERN:n       (0-based)
+    function handleIncomingLine(line) {
+      if (line.startsWith("TEL:")) {
+        parseTelemetry(line);
+      } else if (line.startsWith("STAT:")) {
+        parseStatus(line);
+      } else if (line.startsWith("LIST:")) {
+        // fallback if firmware just prints "LIST:n"
+        const n = parseInt(line.slice(5), 10);
+        if (!isNaN(n)) setGuiListIndex(n);
+      } else if (line.startsWith("PATTERN:")) {
+        const n = parseInt(line.slice(8), 10);
+        if (!isNaN(n)) setGuiPatternIndex(n);
+      }
+    }
 
-    // Connection buttons
+    function parseTelemetry(line) {
+      // TEL:GYRO:x,y,z
+      // TEL:ACC:x,y,z
+      // TEL:MIC:val
+      const parts = line.split(":");
+      if (parts.length < 3) return;
+
+      const kind = parts[1];
+      const payload = parts.slice(2).join(":");
+
+      if (kind === "GYRO" || kind === "ACC") {
+        const vals = payload.split(",").map(v => parseFloat(v));
+        if (vals.length >= 3 && vals.every(v => !isNaN(v))) {
+          const t = Date.now();
+          if (kind === "GYRO") {
+            addImuSample(gyroData, t, vals[0], vals[1], vals[2]);
+          } else {
+            addImuSample(accelData, t, vals[0], vals[1], vals[2]);
+          }
+        }
+      } else if (kind === "MIC") {
+        const v = parseFloat(payload);
+        if (!isNaN(v)) {
+          addMicSample(Date.now(), v);
+        }
+      }
+    }
+
+    function parseStatus(line) {
+      // STAT:LIST:n or STAT:PATTERN:n
+      const parts = line.split(":");
+      if (parts.length < 3) return;
+      const key = parts[1];
+      const n = parseInt(parts[2], 10);
+      if (isNaN(n)) return;
+
+      if (key === "LIST") setGuiListIndex(n);
+      else if (key === "PATTERN") setGuiPatternIndex(n);
+    }
+
+    function setGuiListIndex(n) {
+      guiListIndex = n;
+      updateListDisplay();
+    }
+
+    function setGuiPatternIndex(n) {
+      guiPatternIndex = n;
+      updatePatternDisplay();
+    }
+
+    function updateListDisplay() {
+      if (guiListIndex == null) {
+        currentListLabel.textContent = "?";
+      } else {
+        currentListLabel.textContent = `${guiListIndex + 1} (device: ${guiListIndex})`;
+      }
+
+      // highlight circle
+      document.querySelectorAll(".list-circle").forEach(el => {
+        const idx = parseInt(el.dataset.list, 10);
+        if (!isNaN(idx) && guiListIndex === idx) {
+          el.classList.add("active");
+        } else {
+          el.classList.remove("active");
+        }
+      });
+    }
+
+    function updatePatternDisplay() {
+      if (guiPatternIndex == null) {
+        currentPatternLabel.textContent = "?";
+      } else {
+        currentPatternLabel.textContent = `${guiPatternIndex + 1} (device: ${guiPatternIndex})`;
+      }
+
+      const slider = document.getElementById("patternSlider");
+      const sliderLabel = document.getElementById("patternSliderLabel");
+      const guiVal = (guiPatternIndex != null ? guiPatternIndex + 1 : 1);
+      slider.value = String(guiVal);
+      sliderLabel.textContent = String(guiVal);
+    }
+
+    // ===== Graph data structures =====
+    const WINDOW_MS = 30000; // 30 seconds
+
+    // For gyro & accel: arrays of {t,x,y,z}
+    const gyroData = [];
+    const accelData = [];
+    // For mic: {t, v}
+    const micData = [];
+
+    function addImuSample(store, timeMs, x, y, z) {
+      store.push({ t: timeMs, x, y, z });
+      const cutoff = timeMs - WINDOW_MS;
+      while (store.length && store[0].t < cutoff) {
+        store.shift();
+      }
+    }
+
+    function addMicSample(timeMs, v) {
+      micData.push({ t: timeMs, v });
+      const cutoff = timeMs - WINDOW_MS;
+      while (micData.length && micData[0].t < cutoff) {
+        micData.shift();
+      }
+    }
+
+    // ===== Graph rendering =====
+    const gyroCanvas  = document.getElementById("gyroCanvas");
+    const accelCanvas = document.getElementById("accelCanvas");
+    const micCanvas   = document.getElementById("micCanvas");
+
+    const gyroCtx  = gyroCanvas.getContext("2d");
+    const accelCtx = accelCanvas.getContext("2d");
+    const micCtx   = micCanvas.getContext("2d");
+
+    function drawGraph(ctx, canvas, data, kind) {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.fillStyle = "#050713";
+      ctx.fillRect(0, 0, w, h);
+
+      const now = Date.now();
+      const minT = now - WINDOW_MS;
+      const maxT = now;
+
+      // Determine value range
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+
+      if (kind === "mic") {
+        if (!data.length) return;
+        for (const s of data) {
+          if (s.v < minVal) minVal = s.v;
+          if (s.v > maxVal) maxVal = s.v;
+        }
+      } else {
+        if (!data.length) return;
+        for (const s of data) {
+          minVal = Math.min(minVal, s.x, s.y, s.z);
+          maxVal = Math.max(maxVal, s.x, s.y, s.z);
+        }
+      }
+
+      if (minVal === Infinity || maxVal === -Infinity) return;
+      if (minVal === maxVal) {
+        // Avoid flatline range
+        minVal -= 1;
+        maxVal += 1;
+      }
+
+      function xFromT(t) {
+        const frac = (t - minT) / (maxT - minT);
+        return Math.max(0, Math.min(w, frac * w));
+      }
+
+      function yFromV(v) {
+        const frac = (v - minVal) / (maxVal - minVal);
+        return h - frac * h;
+      }
+
+      // Grid (simple horizontal midline)
+      ctx.strokeStyle = "#222741";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
+
+      // Draw lines
+      const colors = kind === "mic"
+        ? ["#4fa9ff"]
+        : ["#f94144", "#43aa8b", "#f9c74f"]; // x, y, z
+
+      function drawSeries(getVal, color) {
+        ctx.beginPath();
+        let first = true;
+        for (const s of data) {
+          const x = xFromT(s.t);
+          const y = yFromV(getVal(s));
+          if (first) {
+            ctx.moveTo(x, y);
+            first = false;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      if (kind === "mic") {
+        drawSeries(s => s.v, colors[0]);
+      } else {
+        drawSeries(s => s.x, colors[0]);
+        drawSeries(s => s.y, colors[1]);
+        drawSeries(s => s.z, colors[2]);
+      }
+    }
+
+    function animationLoop() {
+      drawGraph(gyroCtx, gyroCanvas, gyroData, "gyro");
+      drawGraph(accelCtx, accelCanvas, accelData, "accel");
+      drawGraph(micCtx, micCanvas, micData, "mic");
+      requestAnimationFrame(animationLoop);
+    }
+    requestAnimationFrame(animationLoop);
+
+    // ===== UI wiring =====
+
+    // Connect / disconnect
     document.getElementById("connectA").addEventListener("click", () => connectStick("A"));
     document.getElementById("disconnectA").addEventListener("click", () => disconnectStick("A"));
     document.getElementById("connectB").addEventListener("click", () => connectStick("B"));
     document.getElementById("disconnectB").addEventListener("click", () => disconnectStick("B"));
 
-    // List / pattern navigation
+    // List circles
+    document.getElementById("listCircles").addEventListener("click", e => {
+      const el = e.target.closest(".list-circle");
+      if (!el) return;
+      const idx = parseInt(el.dataset.list, 10);
+      if (isNaN(idx)) return;
+      // internal 0-based
+      setGuiListIndex(idx);
+      sendCommand(`SET:LIST:${idx}`);
+    });
+
+    // Next/Prev list
     document.getElementById("nextList").addEventListener("click", () => {
       sendCommand("CMD:NEXT_LIST");
+      if (guiListIndex != null) {
+        // naive wrap through 0..8
+        guiListIndex = (guiListIndex + 1) % 9;
+        updateListDisplay();
+      }
     });
+
     document.getElementById("prevList").addEventListener("click", () => {
       sendCommand("CMD:PREV_LIST");
+      if (guiListIndex != null) {
+        guiListIndex = (guiListIndex + 9 - 1) % 9;
+        updateListDisplay();
+      }
+    });
+
+    // Pattern slider & controls
+    const patternSlider = document.getElementById("patternSlider");
+    const patternSliderLabel = document.getElementById("patternSliderLabel");
+
+    patternSlider.addEventListener("input", () => {
+      patternSliderLabel.textContent = patternSlider.value;
+    });
+
+    document.getElementById("setPattern").addEventListener("click", () => {
+      const guiVal = parseInt(patternSlider.value, 10) || 1;
+      const internal = guiVal - 1; // 1-based → 0-based
+      setGuiPatternIndex(internal);
+      sendCommand(`SET:PATTERN:${internal}`);
     });
 
     document.getElementById("nextPattern").addEventListener("click", () => {
       sendCommand("CMD:NEXT_PATTERN");
-    });
-    document.getElementById("prevPattern").addEventListener("click", () => {
-      sendCommand("CMD:PREV_PATTERN");
+      if (guiPatternIndex != null) {
+        guiPatternIndex = (guiPatternIndex + 1) % 20;
+        updatePatternDisplay();
+      }
     });
 
+    document.getElementById("prevPattern").addEventListener("click", () => {
+      sendCommand("CMD:PREV_PATTERN");
+      if (guiPatternIndex != null) {
+        guiPatternIndex = (guiPatternIndex + 20 - 1) % 20;
+        updatePatternDisplay();
+      }
+    });
+
+    // Favorite
     document.getElementById("favorite").addEventListener("click", () => {
       sendCommand("CMD:FAVORITE");
     });
 
-    // Direct SET:LIST / SET:PATTERN
-    document.getElementById("setList").addEventListener("click", () => {
-      const n = parseInt(document.getElementById("listIndex").value, 10) || 0;
-      sendCommand(`SET:LIST:${n}`);
-    });
-
-    document.getElementById("setPattern").addEventListener("click", () => {
-      const n = parseInt(document.getElementById("patternIndex").value, 10) || 0;
-      sendCommand(`SET:PATTERN:${n}`);
-    });
-
-    // Brightness slider (0..7)
+    // Brightness slider (GUI 1–8 → internal 0–7)
     const brightSlider = document.getElementById("brightSlider");
-    const brightLabel = document.getElementById("brightLabel");
+    const brightLabel  = document.getElementById("brightLabel");
 
-    brightSlider.addEventListener("input", () => {
-      brightLabel.textContent = brightSlider.value;
-    });
+    function updateBrightLabel() {
+      const guiVal = parseInt(brightSlider.value, 10) || 1;
+      const internal = guiVal - 1;
+      brightLabel.textContent = `${guiVal} (device: ${internal})`;
+    }
+
+    brightSlider.addEventListener("input", updateBrightLabel);
+    updateBrightLabel();
 
     document.getElementById("brightSend").addEventListener("click", () => {
-      const val = parseInt(brightSlider.value, 10) || 0;
-      sendCommand(`SET:BRIGHT:${val}`);
+      const guiVal = parseInt(brightSlider.value, 10) || 1;
+      let internal = guiVal - 1; // 0..7
+      if (internal < 0) internal = 0;
+      if (internal > 7) internal = 7;
+      sendCommand(`SET:BRIGHT:${internal}`);
     });
 
-    // Shuffle T slider: 0.5s..10s mapped linearly from 5..100
+    // Shuffle_T slider: 0.5..10.0 s (5..100 -> /10)
     const tSlider = document.getElementById("tSlider");
-    const tLabel = document.getElementById("tLabel");
+    const tLabel  = document.getElementById("tLabel");
 
     function updateTLabel() {
       const raw = parseInt(tSlider.value, 10);
-      const seconds = raw / 10.0;         // 5 -> 0.5s, 100 -> 10.0s
-      const ms = Math.round(seconds * 1000);
+      const seconds = raw / 10.0;
+      let ms = Math.round(seconds * 1000);
+      if (ms < 500) ms = 500;
       tLabel.textContent = `${seconds.toFixed(1)} s (${ms} ms)`;
     }
 
@@ -441,7 +833,7 @@
       const raw = parseInt(tSlider.value, 10);
       const seconds = raw / 10.0;
       let ms = Math.round(seconds * 1000);
-      if (ms < 500) ms = 500; // matches firmware clamp
+      if (ms < 500) ms = 500;
       sendCommand(`SET:SHUFFLE_T:${ms}`);
     });
 
@@ -467,8 +859,8 @@
 
     // Raw input
     document.getElementById("rawSend").addEventListener("click", () => {
-      const val = document.getElementById("rawInput").value.trim();
-      if (val) sendCommand(val);
+      const v = document.getElementById("rawInput").value.trim();
+      if (v) sendCommand(v);
     });
 
     document.getElementById("rawInput").addEventListener("keydown", e => {
