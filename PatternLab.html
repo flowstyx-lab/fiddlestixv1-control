@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FiddleStIX Pattern Generation Machine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      padding: 1rem;
+      background: #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+    .header-right {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      border-radius: 999px;
+    }
+    .connect-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 999px;
+      background: #0af;
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .connect-btn.connected {
+      background: #0f0;
+      color: #000;
+    }
+
+    main {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 1rem;
+    }
+    section {
+      background: #181818;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 0 0 1px #222;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #aaa;
+    }
+    h3 {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    label {
+      font-size: 0.85rem;
+      color: #bbb;
+      min-width: 120px;
+    }
+    select, input[type="number"], input[type="checkbox"] {
+      font-size: 0.85rem;
+    }
+    input[type="number"] {
+      width: 5rem;
+    }
+    .segments-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .segments-table th,
+    .segments-table td {
+      border: 1px solid #333;
+      padding: 0.25rem;
+      text-align: center;
+    }
+    .segments-table th {
+      background: #202020;
+      color: #ccc;
+    }
+    .segments-table input,
+    .segments-table select {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 0.8rem;
+    }
+    .small-btn {
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      border: none;
+      background: #333;
+      color: #eee;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    .small-btn:hover {
+      background: #444;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      background: #111;
+      color: #0f0;
+      border-radius: 8px;
+      border: 1px solid #333;
+      padding: 0.5rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+    }
+    .debug-box {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      color: #ccc;
+      background: #111;
+      border-radius: 6px;
+      padding: 0.5rem;
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #333;
+    }
+    .device-status {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 0.5rem;
+    }
+    @media (max-width: 1050px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>FiddleStIX Pattern Generation Machine</h1>
+  <div class="header-right">
+    <button id="connectBtnA" class="connect-btn">Connect #1</button>
+    <button id="connectBtnB" class="connect-btn">Connect #2</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: Pattern generation UI -->
+  <section>
+    <h2>Pattern Definition</h2>
+
+    <!-- High-level meta: symmetry, type, split -->
+    <div class="row">
+      <label for="symmetryCheckbox">p_Symmetry (bounce)</label>
+      <input type="checkbox" id="symmetryCheckbox" checked>
+    </div>
+
+    <div class="row">
+      <label for="typeSelect">p_Type</label>
+      <select id="typeSelect">
+        <option value="0">0 - All LEDs same</option>
+        <option value="1">1 - LED0 only (others off)</option>
+        <option value="2">2 - Split colors via p_Split</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="splitInput">p_Split (0-5)</label>
+      <input type="number" id="splitInput" min="0" max="5" value="0">
+    </div>
+
+    <hr style="border:none;border-top:1px solid #333;margin:0.75rem 0;">
+
+    <h3>Segments (building blocks)</h3>
+    <p style="font-size:0.8rem;color:#bbb;margin-top:0;">
+      Each segment describes a block of time with its own behavior:
+      <br>Mode, colors, brightness, duration, and strobe behavior.
+      The generator expands these into discrete steps and frames.
+    </p>
+
+    <table class="segments-table" id="segmentsTable">
+      <thead>
+        <tr>
+          <th>Mode</th>
+          <th>From Color</th>
+          <th>To Color</th>
+          <th>From B</th>
+          <th>To B</th>
+          <th>Duration (ms)</th>
+          <th>Strobe f<sub>start</sub> (Hz)</th>
+          <th>Strobe f<sub>end</sub> (Hz)</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="segmentsBody">
+        <!-- Rows added dynamically -->
+      </tbody>
+    </table>
+
+    <div class="btn-row">
+      <button id="addSegmentBtn" class="small-btn">+ Add Segment</button>
+      <button id="clearSegmentsBtn" class="small-btn">Clear Segments</button>
+    </div>
+
+    <div class="btn-row">
+      <button id="generateBtn" class="small-btn">Generate + Preview</button>
+      <button id="stopPreviewBtn" class="small-btn">Stop Preview</button>
+    </div>
+
+    <p style="font-size:0.8rem;color:#bbb;margin-top:0.5rem;">
+      The generated pattern is approximated with ~50ms frame resolution, then
+      compressed into <code>PatternStep</code>s for the firmware.
+      Preview is streamed as RAW frames over BLE to both devices.
+    </p>
+  </section>
+
+  <!-- RIGHT: Output C code + debug -->
+  <section>
+    <h2>Generated Pattern (C Code)</h2>
+
+    <textarea id="codeOutput" readonly></textarea>
+
+    <div class="device-status">
+      <strong>Device #1:</strong> <span id="statusA">Disconnected</span><br>
+      <strong>Device #2:</strong> <span id="statusB">Disconnected</span>
+    </div>
+
+    <div class="debug-box" id="debugBox">
+      <!-- JS logs go here -->
+    </div>
+  </section>
+</main>
+
+<script>
+  /************************************************************
+   * BLE UART UUIDs (Nordic / Adafruit UART)
+   ************************************************************/
+  const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+  const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+
+  /************************************************************
+   * PatternColor enum mapping (must match firmware)
+   ************************************************************/
+  const PatternColor = {
+    WHITE: 0,
+    RED: 1,
+    ORANGE: 2,
+    YELLOW: 3,
+    GREEN: 4,
+    BLUE: 5,
+    INDIGO: 6,
+    VIOLET: 7,
+    PURPLE: 8,
+    MAGENTA: 9,
+    PINK: 10,
+    BLACK: 11
+  };
+
+  const COLOR_NAMES = [
+    'WHITE', 'RED', 'ORANGE', 'YELLOW', 'GREEN',
+    'BLUE', 'INDIGO', 'VIOLET', 'PURPLE', 'MAGENTA', 'PINK', 'BLACK'
+  ];
+
+  const COLOR_RGB = {
+    WHITE:  [255, 255, 255],
+    RED:    [255, 0, 0],
+    ORANGE: [255, 128, 0],
+    YELLOW: [255, 255, 0],
+    GREEN:  [0, 255, 0],
+    BLUE:   [0, 0, 255],
+    INDIGO: [75, 0, 130],
+    VIOLET: [148, 0, 211],
+    PURPLE: [160, 32, 240],
+    MAGENTA:[255, 0, 255],
+    PINK:   [255, 105, 180],
+    BLACK:  [0, 0, 0],
+  };
+
+  /************************************************************
+   * Logging util
+   ************************************************************/
+  const debugBox = document.getElementById('debugBox');
+  function log(msg) {
+    console.log(msg);
+    const line = document.createElement('div');
+    line.textContent = msg;
+    debugBox.appendChild(line);
+    while (debugBox.children.length > 80) {
+      debugBox.removeChild(debugBox.firstChild);
+    }
+    debugBox.scrollTop = debugBox.scrollHeight;
+  }
+
+  /************************************************************
+   * FiddleDevice: minimal BLE wrapper for RAW:FRAME
+   ************************************************************/
+  class FiddleDevice {
+    constructor(idLetter) {
+      this.id = idLetter; // 'A' or 'B'
+      this.device = null;
+      this.server = null;
+      this.service = null;
+      this.rxChar = null;
+      this.txChar = null;
+      this.rxBuffer = '';
+
+      this.connectBtn = document.getElementById('connectBtn' + idLetter);
+      this.statusSpan = document.getElementById('status' + idLetter);
+
+      this.connectBtn.addEventListener('click', () => {
+        if (this.isConnected) this.disconnect();
+        else this.connect();
+      });
+    }
+
+    get isConnected() {
+      return !!(this.device && this.device.gatt && this.device.gatt.connected);
+    }
+
+    setConnectedUI(connected) {
+      if (connected) {
+        this.connectBtn.textContent = `Disconnect #${this.id === 'A' ? '1' : '2'}`;
+        this.connectBtn.classList.add('connected');
+        this.statusSpan.textContent = 'Connected';
+      } else {
+        this.connectBtn.textContent = `Connect #${this.id === 'A' ? '1' : '2'}`;
+        this.connectBtn.classList.remove('connected');
+        this.statusSpan.textContent = 'Disconnected';
+      }
+    }
+
+    async connect() {
+      try {
+        this.device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'FiddleStIX_V1' }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
+        this.device.addEventListener('gattserverdisconnected', () => this.onDisconnected());
+        this.server = await this.device.gatt.connect();
+        this.service = await this.server.getPrimaryService(UART_SERVICE_UUID);
+        this.rxChar = await this.service.getCharacteristic(UART_RX_CHAR_UUID);
+        this.txChar = await this.service.getCharacteristic(UART_TX_CHAR_UUID);
+
+        // We don't strictly need notifications here, but we'll hook them
+        await this.txChar.startNotifications();
+        this.txChar.addEventListener('characteristicvaluechanged', (evt) => this.handleNotification(evt));
+
+        this.setConnectedUI(true);
+        log(`[${this.id}] Connected to FiddleStIX_V1`);
+      } catch (err) {
+        console.error('connect error', err);
+        alert('Connect failed for device ' + this.id + ': ' + err);
+        this.setConnectedUI(false);
+      }
+    }
+
+    async disconnect() {
+      try {
+        if (this.device && this.device.gatt.connected) {
+          await this.device.gatt.disconnect();
+        }
+      } catch (err) {
+        console.error('disconnect error', err);
+      } finally {
+        this.setConnectedUI(false);
+        log(`[${this.id}] Disconnected`);
+      }
+    }
+
+    onDisconnected() {
+      this.setConnectedUI(false);
+      log(`[${this.id}] Device disconnected (GATT)`);
+    }
+
+    handleNotification(event) {
+      const value = event.target.value;
+      const chunk = new TextDecoder('utf-8').decode(value);
+      this.rxBuffer += chunk;
+      let idx;
+      while ((idx = this.rxBuffer.indexOf('\n')) !== -1) {
+        const line = this.rxBuffer.slice(0, idx).trim();
+        this.rxBuffer = this.rxBuffer.slice(idx + 1);
+        if (!line) continue;
+        log(`[${this.id}] RX: ${line}`);
+      }
+    }
+
+    async sendCommand(str) {
+      if (!this.rxChar || !this.isConnected) return;
+      const data = new TextEncoder().encode(str + '\n');
+      try {
+        await this.rxChar.writeValue(data);
+        log(`[${this.id}] TX: ${str}`);
+      } catch (err) {
+        console.error('sendCommand error', err);
+        log(`[${this.id}] sendCommand error: ${err}`);
+      }
+    }
+  }
+
+  const devA = new FiddleDevice('A');
+  const devB = new FiddleDevice('B');
+  const devices = [devA, devB];
+
+  async function broadcastRawFrame(c0, b0, c1, b1, c2, b2) {
+    const cmd = `RAW:FRAME:${c0},${b0},${c1},${b1},${c2},${b2}`;
+    for (const dev of devices) {
+      if (dev.isConnected) {
+        dev.sendCommand(cmd);
+      }
+    }
+  }
+
+  /************************************************************
+   * Segment table UI
+   ************************************************************/
+  const segmentsBody = document.getElementById('segmentsBody');
+  const addSegmentBtn = document.getElementById('addSegmentBtn');
+  const clearSegmentsBtn = document.getElementById('clearSegmentsBtn');
+
+  function createSegmentRow() {
+    const tr = document.createElement('tr');
+
+    // Mode
+    const modeTd = document.createElement('td');
+    const modeSel = document.createElement('select');
+    ['SOLID', 'STROBE', 'FADE', 'STROBE_FADE', 'ACCEL_STROBE_FADE'].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      modeSel.appendChild(opt);
+    });
+    modeTd.appendChild(modeSel);
+    tr.appendChild(modeTd);
+
+    // From color
+    const fromColorTd = document.createElement('td');
+    const fromColorSel = document.createElement('select');
+    COLOR_NAMES.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+    fromColorSel.appendChild(opt);
+    });
+    fromColorTd.appendChild(fromColorSel);
+    tr.appendChild(fromColorTd);
+
+    // To color
+    const toColorTd = document.createElement('td');
+    const toColorSel = document.createElement('select');
+    COLOR_NAMES.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      toColorSel.appendChild(opt);
+    });
+    toColorSel.value = 'WHITE';
+    toColorTd.appendChild(toColorSel);
+    tr.appendChild(toColorTd);
+
+    // From brightness
+    const fromBTd = document.createElement('td');
+    const fromBInput = document.createElement('input');
+    fromBInput.type = 'number';
+    fromBInput.min = '0';
+    fromBInput.max = '4';
+    fromBInput.value = '4';
+    fromBTd.appendChild(fromBInput);
+    tr.appendChild(fromBTd);
+
+    // To brightness
+    const toBTd = document.createElement('td');
+    const toBInput = document.createElement('input');
+    toBInput.type = 'number';
+    toBInput.min = '0';
+    toBInput.max = '4';
+    toBInput.value = '4';
+    toBTd.appendChild(toBInput);
+    tr.appendChild(toBTd);
+
+    // Duration
+    const durTd = document.createElement('td');
+    const durInput = document.createElement('input');
+    durInput.type = 'number';
+    durInput.min = '10';
+    durInput.max = '60000';
+    durInput.value = '500';
+    durTd.appendChild(durInput);
+    tr.appendChild(durTd);
+
+    // Strobe f_start
+    const fsTd = document.createElement('td');
+    const fsInput = document.createElement('input');
+    fsInput.type = 'number';
+    fsInput.min = '0';
+    fsInput.max = '50';
+    fsInput.value = '0';
+    fsTd.appendChild(fsInput);
+    tr.appendChild(fsTd);
+
+    // Strobe f_end
+    const feTd = document.createElement('td');
+    const feInput = document.createElement('input');
+    feInput.type = 'number';
+    feInput.min = '0';
+    feInput.max = '50';
+    feInput.value = '0';
+    feTd.appendChild(feInput);
+    tr.appendChild(feTd);
+
+    // Delete
+    const delTd = document.createElement('td');
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'X';
+    delBtn.className = 'small-btn';
+    delBtn.addEventListener('click', () => tr.remove());
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    segmentsBody.appendChild(tr);
+  }
+
+  addSegmentBtn.addEventListener('click', () => {
+    createSegmentRow();
+  });
+
+  clearSegmentsBtn.addEventListener('click', () => {
+    segmentsBody.innerHTML = '';
+  });
+
+  // Start with one segment
+  createSegmentRow();
+
+  /************************************************************
+   * Pattern generation logic
+   ************************************************************/
+  const symmetryCheckbox = document.getElementById('symmetryCheckbox');
+  const typeSelect = document.getElementById('typeSelect');
+  const splitInput = document.getElementById('splitInput');
+  const codeOutput = document.getElementById('codeOutput');
+
+  const generateBtn = document.getElementById('generateBtn');
+  const stopPreviewBtn = document.getElementById('stopPreviewBtn');
+
+  // Frame resolution in ms (temporal granularity for POV synthesis)
+  const FRAME_DT = 50; // 20 FPS
+
+  let previewTimer = null;
+  let previewFrames = [];  // [{c0,b0,c1,b1,c2,b2}, ...]
+  let previewIndex = 0;
+
+  function colorNameToEnumIndex(name) {
+    return PatternColor[name] ?? PatternColor.BLACK;
+  }
+
+  function mixRgb(c1, c2, t) {
+    return [
+      Math.round(c1[0] + (c2[0] - c1[0]) * t),
+      Math.round(c1[1] + (c2[1] - c1[1]) * t),
+      Math.round(c1[2] + (c2[2] - c1[2]) * t),
+    ];
+  }
+
+  function rgbToNearestEnum(rgb) {
+    let bestName = 'BLACK';
+    let bestDist = Infinity;
+    for (const name of COLOR_NAMES) {
+      const c = COLOR_RGB[name];
+      const dx = c[0] - rgb[0];
+      const dy = c[1] - rgb[1];
+      const dz = c[2] - rgb[2];
+      const dist = dx*dx + dy*dy + dz*dz;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestName = name;
+      }
+    }
+    return bestName;
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  // For strobe, decide if LED is "on" at time t
+  function strobeOn(tMs, fStart, fEnd, durMs) {
+    if (fStart <= 0 && fEnd <= 0) return true; // no strobe
+    const t = tMs / durMs;
+    const f = lerp(fStart, fEnd, t); // Hz
+    if (f <= 0) return true;
+    const period = 1000 / f; // ms
+    const phase = tMs % period;
+    return (phase < period / 2); // 50% duty
+  }
+
+  // Build array of "frames" for the whole pattern
+  function buildFramesFromSegments() {
+    const segments = [];
+    for (const tr of Array.from(segmentsBody.children)) {
+      const cells = tr.querySelectorAll('td');
+      const mode = cells[0].querySelector('select').value;
+      const fromColorName = cells[1].querySelector('select').value;
+      const toColorName   = cells[2].querySelector('select').value;
+      const fromB = parseInt(cells[3].querySelector('input').value || '0', 10);
+      const toB   = parseInt(cells[4].querySelector('input').value || '0', 10);
+      const durMs = parseInt(cells[5].querySelector('input').value || '0', 10);
+      const fStart = parseFloat(cells[6].querySelector('input').value || '0');
+      const fEnd   = parseFloat(cells[7].querySelector('input').value || '0');
+      if (durMs <= 0) continue;
+      segments.push({
+        mode,
+        fromColorName,
+        toColorName,
+        fromB,
+        toB,
+        durMs,
+        fStart,
+        fEnd
+      });
+    }
+
+    const frames = [];
+    let globalTime = 0;
+
+    for (const seg of segments) {
+      const steps = Math.max(1, Math.round(seg.durMs / FRAME_DT));
+      const fromRgb = COLOR_RGB[seg.fromColorName];
+      const toRgb   = COLOR_RGB[seg.toColorName];
+
+      for (let i = 0; i < steps; i++) {
+        const localT = i / Math.max(1, steps - 1); // 0..1
+        let rgb;
+        let b;
+        // base color / brightness
+        if (seg.mode === 'FADE' || seg.mode === 'STROBE_FADE' || seg.mode === 'ACCEL_STROBE_FADE') {
+          rgb = mixRgb(fromRgb, toRgb, localT);
+          b   = lerp(seg.fromB, seg.toB, localT);
+        } else {
+          rgb = fromRgb.slice();
+          b   = seg.fromB;
+        }
+
+        // strobe overlay
+        let on = true;
+        if (seg.mode === 'STROBE' || seg.mode === 'STROBE_FADE' || seg.mode === 'ACCEL_STROBE_FADE') {
+          const tMsLocal = i * FRAME_DT;
+          on = strobeOn(tMsLocal, seg.fStart, seg.fEnd, seg.durMs);
+        }
+
+        let colorEnumName;
+        let brightness;
+
+        if (!on || b <= 0) {
+          colorEnumName = 'BLACK';
+          brightness = 0;
+        } else {
+          colorEnumName = rgbToNearestEnum(rgb);
+          // clamp brightness 0..4
+          brightness = Math.max(0, Math.min(4, Math.round(b)));
+        }
+
+        frames.push({
+          t: globalTime,
+          colorName: colorEnumName,
+          brightness
+        });
+
+        globalTime += FRAME_DT;
+      }
+    }
+
+    return frames;
+  }
+
+  // Compress frames into PatternSteps (same color/brightness collapsed with duration)
+  function compressFramesToSteps(frames) {
+    const steps = [];
+    if (frames.length === 0) return steps;
+
+    let current = {
+      colorName: frames[0].colorName,
+      brightness: frames[0].brightness,
+      duration: FRAME_DT
+    };
+
+    for (let i = 1; i < frames.length; i++) {
+      const f = frames[i];
+      if (f.colorName === current.colorName && f.brightness === current.brightness) {
+        current.duration += FRAME_DT;
+      } else {
+        steps.push(current);
+        current = {
+          colorName: f.colorName,
+          brightness: f.brightness,
+          duration: FRAME_DT
+        };
+      }
+    }
+    steps.push(current);
+    return steps;
+  }
+
+  // Generate + preview
+  generateBtn.addEventListener('click', () => {
+    const frames = buildFramesFromSegments();
+    if (frames.length === 0) {
+      alert('No valid segments / frames generated.');
+      return;
+    }
+
+    const steps = compressFramesToSteps(frames);
+
+    // Build C code snippet matching current firmware structures
+    const pSym = symmetryCheckbox.checked ? 'true' : 'false';
+    const pType = parseInt(typeSelect.value, 10);
+    const pSplit = parseInt(splitInput.value || '0', 10);
+
+    let code = '';
+    code += '// Generated by PatternGenerationMachine\n';
+    code += 'const PatternStep generatedPatternSteps[] = {\n';
+    steps.forEach((s, i) => {
+      const colorEnum = 'COLOR_' + s.colorName;
+      code += `  {${colorEnum}, ${s.brightness}, ${s.duration}`;
+      code += (i === steps.length - 1) ? '}\n' : '},\n';
+    });
+    code += '};\n\n';
+    code += 'const Pattern generatedPattern = {\n';
+    code += `  ${pSym}, ${pType}, ${pSplit}, ${steps.length}, generatedPatternSteps\n`;
+    code += '};\n';
+
+    codeOutput.value = code;
+    log('Generated pattern with ' + steps.length + ' steps from ' + frames.length + ' frames.');
+
+    // Build preview frames for 3 LEDs using p_Type and p_Split
+    previewFrames = frames.map(f => {
+      const colorEnum = colorNameToEnumIndex(f.colorName);
+      const b = f.brightness;
+
+      if (pType === 1) {
+        // LED0 only
+        return {
+          c0: colorEnum, b0: b,
+          c1: PatternColor.BLACK, b1: 0,
+          c2: PatternColor.BLACK, b2: 0
+        };
+      } else if (pType === 2) {
+        // Split across LEDs using shift-like logic
+        const baseIdx = colorEnum;
+        const split = pSplit;
+        const c0 = baseIdx;
+        const c1 = (baseIdx + ((split % 3) + 1)) % Object.keys(PatternColor).length;
+        const c2 = (baseIdx + ((split % 5) + 2)) % Object.keys(PatternColor).length;
+        return {
+          c0, b0: b,
+          c1, b1: b,
+          c2, b2: b
+        };
+      } else {
+        // Type 0: all same
+        return {
+          c0: colorEnum, b0: b,
+          c1: colorEnum, b1: b,
+          c2: colorEnum, b2: b
+        };
+      }
+    });
+
+    startPreview();
+  });
+
+  function startPreview() {
+    stopPreview();
+    if (previewFrames.length === 0) return;
+
+    previewIndex = 0;
+
+    previewTimer = setInterval(() => {
+      const f = previewFrames[previewIndex];
+      broadcastRawFrame(f.c0, f.b0, f.c1, f.b1, f.c2, f.b2);
+      previewIndex = (previewIndex + 1) % previewFrames.length;
+    }, FRAME_DT);
+
+    log('Preview started.');
+  }
+
+  function stopPreview() {
+    if (previewTimer !== null) {
+      clearInterval(previewTimer);
+      previewTimer = null;
+      log('Preview stopped.');
+    }
+  }
+
+  stopPreviewBtn.addEventListener('click', stopPreview);
+</script>
+</body>
+</html>
