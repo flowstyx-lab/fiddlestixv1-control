@@ -251,7 +251,7 @@
       <span class="value" id="shuffleSliderVal">5000</span>
     </div>
 
-    <!-- Boolean flags (SET:BOOL:... broadcast to all devices) -->
+    <!-- Boolean flags (we broadcast both old-style SET:BOOL:... and CFG,... for safety) -->
     <div>
       <h2>Flags</h2>
       <div class="bool-toggle">
@@ -268,7 +268,7 @@
       </div>
     </div>
 
-    <!-- PER-DEVICE STATUS INFO -->
+    <!-- PER-DEVICE STATUS INFO (updated from TEL lines) -->
     <div class="device-status-block">
       <strong>Device #1 Status</strong><br>
       State: <span id="stateLabelA">Unknown</span> ·
@@ -319,6 +319,8 @@
 <script>
   /************************************************************
    * BLE UART UUIDs (Nordic / Adafruit UART)
+   * - These must match the service/characteristic UUIDs used
+   *   by the firmware's Bluefruit UART service.
    ************************************************************/
   const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
   const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
@@ -329,6 +331,7 @@
 
   /************************************************************
    * Helper: clamp array length to MAX_POINTS
+   * - Ensures our time series buffers don't grow without bound.
    ************************************************************/
   function trimArray(arr) {
     while (arr.length > MAX_POINTS) arr.shift();
@@ -349,8 +352,8 @@
       this.device = null;
       this.server = null;
       this.uartService = null;
-      this.rxChar = null;  // write
-      this.txChar = null;  // notify
+      this.rxChar = null;  // write characteristic
+      this.txChar = null;  // notify characteristic
 
       // For line-assembly of incoming notifications
       this.rxBuffer = '';
@@ -367,7 +370,7 @@
       this.accelData = { t: [], ax: [], ay: [], az: [] };
       this.micData = { t: [], mic: [] };
 
-      // Charts for this device
+      // Create charts for this device
       this.gyroChart = new Chart(
         document.getElementById('gyroCanvas' + idLetter).getContext('2d'),
         {
@@ -456,6 +459,7 @@
 
     /***********************
      * LOGGING TO UI + CONSOLE
+     * - Shows what's happening per-device.
      ***********************/
     log(msg) {
       console.log(`[${this.id}] ${msg}`);
@@ -471,6 +475,7 @@
 
     /***********************
      * CONNECT / DISCONNECT
+     * - Web Bluetooth pairing and GATT setup.
      ***********************/
     async connect() {
       try {
@@ -487,6 +492,7 @@
         this.rxChar = await this.uartService.getCharacteristic(UART_RX_CHAR_UUID);
         this.txChar = await this.uartService.getCharacteristic(UART_TX_CHAR_UUID);
 
+        // Start notifications from TX characteristic (device → browser)
         await this.txChar.startNotifications();
         this.txChar.addEventListener('characteristicvaluechanged', (evt) => this.handleNotifications(evt));
 
@@ -566,6 +572,7 @@
     }
 
     parseTelemetryLine(line) {
+      // Expected format:
       // TEL,ms,ax,ay,az,gx,gy,gz,mic,list,pattern,state
       const parts = line.split(',');
       if (parts.length < 12) return;
@@ -644,7 +651,7 @@
 
     /***********************
      * SENDING COMMANDS
-     * - str should be like "CMD:..." or "SET:..."
+     * - str should be like "CMD:..." or "SET:..." or "CFG,..."
      * - We add '\n' before sending over RX characteristic
      ***********************/
     async sendCommand(str) {
@@ -662,6 +669,7 @@
 
   /************************************************************
    * Helper: map state ID to human-readable name
+   * - Must match the enum in the firmware.
    ************************************************************/
   function stateNameFromId(id) {
     switch (id) {
@@ -687,8 +695,9 @@
   const devices = [deviceA, deviceB];
 
   /************************************************************
-   * LIST CIRCLES (single set of clickable colors)
-   * - When clicked, send SET:LIST:n to all connected devices.
+   * LIST CIRCLES
+   * - Single set of colored dots, one per list index (0–8).
+   * - When clicked, sends SET:LIST:n to all connected devices.
    ************************************************************/
   const listCirclesContainer = document.getElementById('listCircles');
 
@@ -732,6 +741,7 @@
 
   /************************************************************
    * CONNECT BUTTON HANDLERS
+   * - Each button toggles connect/disconnect for that device.
    ************************************************************/
   document.getElementById('connectBtnA').addEventListener('click', () => {
     if (deviceA.isConnected) {
@@ -751,9 +761,9 @@
 
   /************************************************************
    * BROADCAST COMMANDS TO ALL CONNECTED DEVICES
+   * - Used for all shared controls (buttons, sliders, flags).
    ************************************************************/
   async function broadcastCommand(str) {
-    // Send command to each connected device
     for (const dev of devices) {
       if (dev.isConnected) {
         dev.sendCommand(str);
@@ -776,6 +786,9 @@
   /************************************************************
    * SLIDERS + FLAGS
    * - Their values are broadcast via SET: commands.
+   * - For shuffle/sleepTimer/powerLock we ALSO send CFG,...
+   *   so the firmware can directly update config variables
+   *   (e.g. shuffle_P, userConfig.sleepTimer, powerLock).
    ************************************************************/
   const patternSlider = document.getElementById('patternSlider');
   const patternSliderVal = document.getElementById('patternSliderVal');
@@ -802,20 +815,35 @@
   });
   shuffleSlider.addEventListener('change', () => {
     broadcastCommand(`SET:SHUFFLE_T:${shuffleSlider.value}`);
+    // Optional: if firmware supports CFG for shuffle_T as well
+    broadcastCommand(`CFG,SHUFFLE_T,${shuffleSlider.value}`);
   });
 
   const shuffleFlag = document.getElementById('shuffleFlag');
   const sleepTimerFlag = document.getElementById('sleepTimerFlag');
   const powerLockFlag = document.getElementById('powerLockFlag');
 
+  // Shuffle flag:
+  // - Old style: SET:BOOL:shuffle:0/1
+  // - New style: CFG,SHUFFLE_P,0/1  (expected by firmware's shuffle_P)
   shuffleFlag.addEventListener('change', () => {
-    broadcastCommand(`SET:BOOL:shuffle:${shuffleFlag.checked ? 1 : 0}`);
+    const val = shuffleFlag.checked ? 1 : 0;
+    broadcastCommand(`SET:BOOL:shuffle:${val}`);
+    broadcastCommand(`CFG,SHUFFLE_P,${val}`);
   });
+
+  // Sleep timer flag (assuming firmware might use CFG,SLEEP_TIMER,0/1)
   sleepTimerFlag.addEventListener('change', () => {
-    broadcastCommand(`SET:BOOL:sleepTimer:${sleepTimerFlag.checked ? 1 : 0}`);
+    const val = sleepTimerFlag.checked ? 1 : 0;
+    broadcastCommand(`SET:BOOL:sleepTimer:${val}`);
+    broadcastCommand(`CFG,SLEEP_TIMER,${val}`);
   });
+
+  // Power lock flag (assuming firmware might use CFG,POWER_LOCK,0/1)
   powerLockFlag.addEventListener('change', () => {
-    broadcastCommand(`SET:BOOL:powerLock:${powerLockFlag.checked ? 1 : 0}`);
+    const val = powerLockFlag.checked ? 1 : 0;
+    broadcastCommand(`SET:BOOL:powerLock:${val}`);
+    broadcastCommand(`CFG,POWER_LOCK,${val}`);
   });
 
   /************************************************************
