@@ -193,7 +193,7 @@
     <div class="row-spaced">
 
       <div>
-        <p class="small">Global brightness (0–7 → sent via <code>SET:BRIGHT</code>)</p>
+        <p class="small">Global brightness (0–7 → <code>SET:BRIGHT</code>)</p>
         <div class="slider-row">
           <label for="brightSlider">Brightness:</label>
           <input id="brightSlider" type="range" min="0" max="7" value="4" />
@@ -203,7 +203,7 @@
       </div>
 
       <div>
-        <p class="small">Shuffle T (seconds → sent as ms via <code>SET:SHUFFLE_T</code>)</p>
+        <p class="small">Shuffle T (seconds → ms, <code>SET:SHUFFLE_T</code>)</p>
         <div class="slider-row">
           <label for="tSlider">T (s):</label>
           <!-- 0.5s to 10s, mapped to 500–10000 ms in code -->
@@ -261,8 +261,8 @@
   <script>
     // === UUIDs for Adafruit Bluefruit UART service ===
     const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Nordic TX (peripheral receives)
-    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Nordic RX (peripheral sends)
+    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // central writes here
+    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // notifications from peripheral
 
     const encoder = new TextEncoder();
 
@@ -287,13 +287,17 @@
       const disconnectBtn = document.getElementById(`disconnect${key}`);
 
       try {
+        // IMPORTANT: use filters *without* acceptAllDevices
         const device = await navigator.bluetooth.requestDevice({
-          filters: [ /* you can add namePrefix here if you want */ ],
-          optionalServices: [UART_SERVICE_UUID],
-          acceptAllDevices: true
+          filters: [
+            { services: [UART_SERVICE_UUID] }
+            // If you want to further restrict by name:
+            // { namePrefix: "LEDStyx" }
+          ]
         });
 
         sticks[key].device = device;
+
         device.addEventListener("gattserverdisconnected", () => {
           log(`Stick ${key}: disconnected`);
           statusElem.textContent = "disconnected";
@@ -467,7 +471,6 @@
       if (val) sendCommand(val);
     });
 
-    // Allow pressing Enter in the raw input
     document.getElementById("rawInput").addEventListener("keydown", e => {
       if (e.key === "Enter") {
         e.preventDefault();
