@@ -1,874 +1,315 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FiddleStIX V1 Control</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    body {
-      background: #050510;
-      color: #f5f5f5;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    h1, h2, h3 {
-      margin: 0 0 10px 0;
-    }
-
-    h1 {
-      font-size: 1.8rem;
-    }
-    h2 {
-      font-size: 1.2rem;
-      margin-top: 10px;
-    }
-
-    .small {
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      background: #20253f;
-      color: #a2b1ff;
-      margin-left: 4px;
-    }
-
-    .card {
-      background: #111323;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
-
-    .flex-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    .device-card {
-      flex: 1 1 260px;
-    }
-
-    button {
-      background: #2c3fe0;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      margin: 4px 4px 4px 0;
-    }
-
-    button.secondary {
-      background: #333a5a;
-    }
-
-    button.danger {
-      background: #e03b4d;
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-
-    input[type="range"] {
-      width: 180px;
-    }
-
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0;
-    }
-
-    label {
-      font-size: 0.85rem;
-    }
-
-    .toggle-group label {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-right: 12px;
-    }
-
-    .log {
-      width: 100%;
-      height: 180px;
-      background: #050713;
-      color: #9fdcff;
-      font-family: "SF Mono", "Consolas", monospace;
-      font-size: 0.8rem;
-      border-radius: 8px;
-      padding: 8px;
-      box-sizing: border-box;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-
-    .row-spaced {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    /* List selector circles */
-    .list-circles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .list-circle {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      border: 2px solid #444;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 0.7rem;
-      color: #000;
-      box-sizing: border-box;
-    }
-
-    .list-circle.active {
-      box-shadow: 0 0 8px #ffffff;
-      border-color: #ffffff;
-    }
-
-    .list-circle.black {
-      background: #000;
-      color: #fff;
-    }
-
-    .list-circle.white { background: #ffffff; }
-    .list-circle.red   { background: #ff4b4b; }
-    .list-circle.orange{ background: #ffb347; }
-    .list-circle.yellow{ background: #ffe45e; }
-    .list-circle.green { background: #7CFC00; }
-    .list-circle.blue  { background: #4fa9ff; }
-    .list-circle.indigo{ background: #4b0082; color:#fff; }
-    .list-circle.violet{ background: #ee82ee; }
-
-    /* Graphs */
-    .graph-container {
-      flex: 1 1 260px;
-    }
-
-    canvas {
-      width: 100%;
-      height: 150px;
-      background: #050713;
-      border-radius: 8px;
-      display: block;
-    }
-
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; background:#0b0f14; color:#e8eef7; }
+    .row { display:flex; gap:10px; flex-wrap: wrap; align-items: center; }
+    .card { background:#121926; border:1px solid #1f2a3a; border-radius:12px; padding:12px; margin:10px 0; }
+    button { background:#1f6feb; border:none; color:white; padding:10px 12px; border-radius:10px; cursor:pointer; }
+    button.secondary { background:#2d3646; }
+    button.danger { background:#d73a49; }
+    button:disabled { opacity:0.5; cursor:not-allowed; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0f1623; border:1px solid #1f2a3a; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#777; }
+    input[type="range"] { width: 260px; }
+    .lists { display:flex; gap:8px; flex-wrap: wrap; }
+    .listCircle { width:18px; height:18px; border-radius:50%; border:1px solid #fff3; cursor:pointer; }
+    .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .small { font-size: 12px; opacity:0.8; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   </style>
 </head>
 <body>
-  <h1>FiddleStIX V1 Control</h1>
-  <p class="small">
-    Connect up to two ends of the stick and control them simultaneously via BLE UART.
-    All controls send matching commands to every connected device.
-  </p>
+  <h2>FiddleStIX V1 Control</h2>
 
-  <!-- Devices -->
-  <div class="flex-row">
-    <div class="card device-card">
-      <h2>Stick A <span id="statusA" class="pill">disconnected</span></h2>
-      <button id="connectA">Connect Stick A</button>
-      <button id="disconnectA" class="danger" disabled>Disconnect</button>
-      <p class="small" id="infoA"></p>
-    </div>
-
-    <div class="card device-card">
-      <h2>Stick B <span id="statusB" class="pill">disconnected</span></h2>
-      <button id="connectB">Connect Stick B</button>
-      <button id="disconnectB" class="danger" disabled>Disconnect</button>
-      <p class="small" id="infoB"></p>
-    </div>
-  </div>
-
-  <!-- Lists & Patterns -->
   <div class="card">
-    <h2>Lists &amp; Patterns</h2>
+    <div class="row">
+      <button id="connectBtn">Connect</button>
+      <span class="pill"><span id="connDot" class="dot"></span><span id="connText">Disconnected</span></span>
+      <span class="pill mono" id="deviceName">—</span>
+      <span class="pill">State: <b id="stateText">—</b></span>
+      <span class="pill">List: <b id="listText">—</b></span>
+      <span class="pill">Pattern: <b id="patternText">—</b></span>
+      <span class="pill">RX: <b id="hzText">—</b> Hz</span>
+    </div>
 
-    <div class="row-spaced">
-      <div style="flex:1 1 220px;">
-        <p class="small">Current state (GUI uses 1-based; device uses 0-based)</p>
-        <p class="small">
-          List: <span id="currentListLabel">?</span>
-          &nbsp; Pattern: <span id="currentPatternLabel">?</span>
-        </p>
-
-        <p class="small">Lists (click circle to jump):</p>
-        <div class="list-circles" id="listCircles">
-          <!-- index (internal) 0..8, GUI label 1..9 -->
-          <div class="list-circle white"  data-list="0" title="White">1</div>
-          <div class="list-circle red"    data-list="1" title="Red">2</div>
-          <div class="list-circle orange" data-list="2" title="Orange">3</div>
-          <div class="list-circle yellow" data-list="3" title="Yellow">4</div>
-          <div class="list-circle green"  data-list="4" title="Green">5</div>
-          <div class="list-circle blue"   data-list="5" title="Blue">6</div>
-          <div class="list-circle indigo" data-list="6" title="Indigo">7</div>
-          <div class="list-circle violet" data-list="7" title="Violet">8</div>
-          <div class="list-circle black"  data-list="8" title="Black / Off">9</div>
-        </div>
-
-        <div style="margin-top:8px;">
-          <button id="prevList">Previous Page</button>
-          <button id="nextList">Next Page</button>
-        </div>
-
+    <div style="margin-top:10px" class="row">
+      <div>
+        <div class="small">Lists (click to set) — GUI shows 1–9, device uses 0–8</div>
+        <div class="lists" id="lists"></div>
       </div>
 
-      <div style="flex:1 1 220px;">
-        <p class="small">Pattern index (1-based GUI → 0-based device)</p>
-        <div class="slider-row">
-          <label for="patternSlider">Pattern:</label>
-          <input id="patternSlider" type="range" min="1" max="20" value="1" />
-          <span id="patternSliderLabel">1</span>
-        </div>
-        <button id="setPattern">Set Pattern</button>
-
-        <div style="margin-top:8px;">
-          <button id="prevPattern">Previous Pattern</button>
-          <button id="nextPattern">Next Pattern</button>
-        </div>
-
-        <div style="margin-top:8px;">
-          <button id="favorite" class="secondary">Favorite</button>
-        </div>
+      <div>
+        <div class="small">Pattern (GUI 1–100, device 0–99)</div>
+        <input id="patternSlider" type="range" min="1" max="100" value="1">
+        <span class="mono" id="patternSliderVal">1</span>
       </div>
+    </div>
+
+    <div style="margin-top:10px" class="row">
+      <button id="prevListBtn" class="secondary">Previous Page</button>
+      <button id="nextListBtn" class="secondary">Next Page</button>
+      <button id="prevPatternBtn" class="secondary">Previous Pattern</button>
+      <button id="nextPatternBtn" class="secondary">Next Pattern</button>
+      <button id="favoriteBtn" class="secondary">Favorite</button>
+      <button id="sleepBtn" class="secondary">Go To Sleep</button>
+      <button id="raveBtn" class="secondary">Rave O’Clock</button>
+      <button id="offBtn" class="danger">OFF</button>
+    </div>
+
+    <div style="margin-top:10px" class="row">
+      <div>
+        <div class="small">Global Brightness (0–255)</div>
+        <input id="brightnessSlider" type="range" min="0" max="255" value="128">
+        <span class="mono" id="brightnessVal">128</span>
+      </div>
+      <div>
+        <div class="small">Shuffle T (ms)</div>
+        <input id="shuffleSlider" type="range" min="1000" max="60000" step="250" value="8000">
+        <span class="mono" id="shuffleVal">8000</span>
+      </div>
+    </div>
+
+    <div style="margin-top:10px" class="row">
+      <button id="toggleShuffleP" class="secondary">Toggle Shuffle_P</button>
+      <button id="toggleSleepTimer" class="secondary">Toggle SleepTimer</button>
+      <button id="togglePowerLock" class="secondary">Toggle PowerLock</button>
+    </div>
+
+    <div class="small" style="margin-top:10px">
+      Incoming telemetry:
+      <span class="mono">SAMP2,ms,role,state,list,pat,axP,ayP,azP,axS,ayS,azS,gxP,gyP,gzP,micP,micS</span>
     </div>
   </div>
 
-  <!-- Brightness & Shuffle_T -->
-  <div class="card">
-    <h2>Brightness &amp; Shuffle Time</h2>
-    <div class="row-spaced">
-      <div style="flex:1 1 220px;">
-        <p class="small">Global brightness (GUI 1–8 → SET:BRIGHT 0–7)</p>
-        <div class="slider-row">
-          <label for="brightSlider">Brightness:</label>
-          <input id="brightSlider" type="range" min="1" max="8" value="5" />
-          <span id="brightLabel">5 (device: 4)</span>
-        </div>
-        <button id="brightSend" class="secondary">Set Brightness</button>
-      </div>
-
-      <div style="flex:1 1 220px;">
-        <p class="small">Shuffle_T (0.5–10 s → ms; min 500 ms)</p>
-        <div class="slider-row">
-          <label for="tSlider">T (s):</label>
-          <!-- 0.5..10.0 s, step 0.1 -->
-          <input id="tSlider" type="range" min="5" max="100" value="30" />
-          <span id="tLabel">3.0 s (3000 ms)</span>
-        </div>
-        <button id="tSend" class="secondary">Set Shuffle_T</button>
-      </div>
+  <div class="grid">
+    <div class="card">
+      <h3>Accelerometer magnitude — Primary vs Secondary</h3>
+      <canvas id="accelChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <h3>Gyroscope magnitude (Primary only)</h3>
+      <canvas id="gyroChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <h3>Mic — Primary vs Secondary</h3>
+      <canvas id="micChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <h3>Latest line</h3>
+      <pre id="raw" class="mono" style="white-space:pre-wrap; word-break:break-word;"></pre>
     </div>
   </div>
 
-  <!-- Booleans & Special commands -->
-  <div class="card">
-    <h2>Flags &amp; Special Modes</h2>
+<script>
+  const UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_TX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+  const UART_RX      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
-    <p class="small">Boolean flags (SET:BOOL:&lt;name&gt;:&lt;0/1&gt;)</p>
-    <div class="toggle-group">
-      <label>
-        <input type="checkbox" id="flagShuffle" />
-        shuffle
-      </label>
-      <label>
-        <input type="checkbox" id="flagSleepTimer" />
-        sleepTimer
-      </label>
-      <label>
-        <input type="checkbox" id="flagPowerLock" />
-        powerLock
-      </label>
-      <button id="sendFlags" class="secondary">Send Flags</button>
-    </div>
+  let device, server, service, txChar, rxChar;
+  let rxBuf = '';
 
-    <div style="margin-top:10px;">
-      <button id="goSleep" class="secondary">Go To Sleep</button>
-      <button id="rave" class="secondary">Rave O’Clock</button>
-    </div>
-  </div>
+  const connDot = document.getElementById('connDot');
+  const connText = document.getElementById('connText');
+  const deviceNameEl = document.getElementById('deviceName');
+  const stateText = document.getElementById('stateText');
+  const listText = document.getElementById('listText');
+  const patternText = document.getElementById('patternText');
+  const rawEl = document.getElementById('raw');
+  const hzText = document.getElementById('hzText');
 
-  <!-- Graphs -->
-  <div class="card">
-    <h2>Sensor Graphs (last 30 s)</h2>
-    <p class="small">
-      Expect firmware to send lines like:
-      <code>TEL:GYRO:x,y,z</code>,
-      <code>TEL:ACC:x,y,z</code>,
-      <code>TEL:MIC:val</code>.
-    </p>
-    <div class="flex-row">
-      <div class="graph-container">
-        <h3>Gyro</h3>
-        <canvas id="gyroCanvas" width="400" height="150"></canvas>
-      </div>
-      <div class="graph-container">
-        <h3>Acceleration</h3>
-        <canvas id="accelCanvas" width="400" height="150"></canvas>
-      </div>
-      <div class="graph-container">
-        <h3>Mic</h3>
-        <canvas id="micCanvas" width="400" height="150"></canvas>
-      </div>
-    </div>
-  </div>
+  const patternSlider = document.getElementById('patternSlider');
+  const patternSliderVal = document.getElementById('patternSliderVal');
+  const brightnessSlider = document.getElementById('brightnessSlider');
+  const brightnessVal = document.getElementById('brightnessVal');
+  const shuffleSlider = document.getElementById('shuffleSlider');
+  const shuffleVal = document.getElementById('shuffleVal');
 
-  <!-- Raw & log -->
-  <div class="card">
-    <h2>Raw Command &amp; Log</h2>
-    <div class="flex-row" style="align-items:flex-start;">
-      <div style="flex:1 1 260px;">
-        <p class="small">Send any raw line (<code>CMD:...</code>, <code>SET:...</code>, <code>RAW:...</code>)</p>
-        <input id="rawInput" type="text" style="width:100%; margin-bottom:4px;" placeholder="e.g. CMD:NEXT_PATTERN" />
-        <button id="rawSend">Send Raw</button>
-      </div>
-      <div style="flex:2 1 320px;">
-        <p class="small">Device log (RX + TX)</p>
-        <div id="log" class="log"></div>
-      </div>
-    </div>
-  </div>
+  const stateNames = ["OFF","PLAY","SLEEP","SHUFFLE","PAIRING","L_SELECT","B_SELECT","T_SELECT"];
+  const listColors = ['#ffffff','#ff3b30','#ff9500','#ffcc00','#34c759','#0a84ff','#5e5ce6','#bf5af2','#111111'];
 
-  <script>
-    // ===== BLE UART UUIDs (Adafruit / Bluefruit style) =====
-    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // central writes here
-    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // notifications from peripheral
+  const listsDiv = document.getElementById('lists');
+  listColors.forEach((c, idx) => {
+    const d = document.createElement('div');
+    d.className = 'listCircle';
+    d.style.background = c;
+    d.title = `List ${idx+1}`;
+    d.onclick = () => sendLine(`SET:LIST:${idx}`);
+    listsDiv.appendChild(d);
+  });
 
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
+  const MAX_SECONDS = 30;
+  const accelP = [], accelS = [], gyroP = [], micP = [], micS = [];
 
-    // Up to 2 sticks
-    const sticks = {
-      A: { device: null, server: null, txChar: null, rxChar: null, buffer: "" },
-      B: { device: null, server: null, txChar: null, rxChar: null, buffer: "" }
-    };
-
-    // GUI-side notion of current indices (0-based)
-    let guiListIndex = null;
-    let guiPatternIndex = null;
-
-    const currentListLabel = document.getElementById("currentListLabel");
-    const currentPatternLabel = document.getElementById("currentPatternLabel");
-
-    const logElem = document.getElementById("log");
-
-    function log(msg) {
-      const time = new Date().toLocaleTimeString();
-      logElem.textContent += `[${time}] ${msg}\n`;
-      logElem.scrollTop = logElem.scrollHeight;
-    }
-
-    // ===== Connection logic =====
-    async function connectStick(key) {
-      const statusElem = document.getElementById(`status${key}`);
-      const infoElem = document.getElementById(`info${key}`);
-      const connectBtn = document.getElementById(`connect${key}`);
-      const disconnectBtn = document.getElementById(`disconnect${key}`);
-
-      try {
-        const device = await navigator.bluetooth.requestDevice({
-          filters: [
-            { services: [UART_SERVICE_UUID] }
-            // optionally: { namePrefix: "FiddleStIX" }
-          ]
-        });
-
-        sticks[key].device = device;
-        device.addEventListener("gattserverdisconnected", () => {
-          log(`Stick ${key}: disconnected`);
-          statusElem.textContent = "disconnected";
-          infoElem.textContent = "";
-          disconnectBtn.disabled = true;
-          connectBtn.disabled = false;
-        });
-
-        log(`Stick ${key}: connecting...`);
-        const server = await device.gatt.connect();
-        sticks[key].server = server;
-
-        const service = await server.getPrimaryService(UART_SERVICE_UUID);
-        const txChar = await service.getCharacteristic(UART_TX_UUID);
-        const rxChar = await service.getCharacteristic(UART_RX_UUID);
-        sticks[key].txChar = txChar;
-        sticks[key].rxChar = rxChar;
-
-        await rxChar.startNotifications();
-        rxChar.addEventListener("characteristicvaluechanged", event => {
-          const chunk = decoder.decode(event.target.value);
-          handleRxChunk(key, chunk);
-        });
-
-        statusElem.textContent = "connected";
-        infoElem.textContent = device.name ? `Name: ${device.name}` : "Name: (unknown)";
-        connectBtn.disabled = true;
-        disconnectBtn.disabled = false;
-
-        log(`Stick ${key}: connected`);
-      } catch (err) {
-        log(`Stick ${key}: ERROR ${err.message || err}`);
-      }
-    }
-
-    async function disconnectStick(key) {
-      const s = sticks[key];
-      if (s.device && s.device.gatt.connected) {
-        log(`Stick ${key}: disconnecting...`);
-        s.device.gatt.disconnect();
-      }
-      sticks[key] = { device: null, server: null, txChar: null, rxChar: null, buffer: "" };
-      document.getElementById(`status${key}`).textContent = "disconnected";
-      document.getElementById(`info${key}`).textContent = "";
-      document.getElementById(`disconnect${key}`).disabled = true;
-      document.getElementById(`connect${key}`).disabled = false;
-    }
-
-    // Handle RX chunks, splitting into lines
-    function handleRxChunk(key, chunk) {
-      const s = sticks[key];
-      s.buffer += chunk;
-      let idx;
-      while ((idx = s.buffer.indexOf("\n")) >= 0) {
-        const line = s.buffer.slice(0, idx).trim();
-        s.buffer = s.buffer.slice(idx + 1);
-        if (line.length > 0) {
-          log(`RX (${key}): ${line}`);
-          handleIncomingLine(line);
-        }
-      }
-    }
-
-    // Send a command line to all connected sticks
-    async function sendCommand(line) {
-      const payload = encoder.encode(line + "\n");
-      log(`TX: ${line}`);
-
-      const promises = [];
-      for (const key of ["A", "B"]) {
-        const tx = sticks[key].txChar;
-        if (tx) {
-          promises.push(
-            tx.writeValueWithoutResponse(payload).catch(err => {
-              log(`ERROR TX (${key}): ${err.message || err}`);
-            })
-          );
-        }
-      }
-      if (promises.length === 0) {
-        log("⚠ No sticks connected; command not sent.");
-      } else {
-        await Promise.all(promises);
-      }
-    }
-
-    // ===== Telemetry & status parsing =====
-    // Expected formats (you can match in firmware):
-    //   TEL:GYRO:x,y,z
-    //   TEL:ACC:x,y,z
-    //   TEL:MIC:value
-    //   STAT:LIST:n          (0-based)
-    //   STAT:PATTERN:n       (0-based)
-    function handleIncomingLine(line) {
-      if (line.startsWith("TEL:")) {
-        parseTelemetry(line);
-      } else if (line.startsWith("STAT:")) {
-        parseStatus(line);
-      } else if (line.startsWith("LIST:")) {
-        // fallback if firmware just prints "LIST:n"
-        const n = parseInt(line.slice(5), 10);
-        if (!isNaN(n)) setGuiListIndex(n);
-      } else if (line.startsWith("PATTERN:")) {
-        const n = parseInt(line.slice(8), 10);
-        if (!isNaN(n)) setGuiPatternIndex(n);
-      }
-    }
-
-    function parseTelemetry(line) {
-      // TEL:GYRO:x,y,z
-      // TEL:ACC:x,y,z
-      // TEL:MIC:val
-      const parts = line.split(":");
-      if (parts.length < 3) return;
-
-      const kind = parts[1];
-      const payload = parts.slice(2).join(":");
-
-      if (kind === "GYRO" || kind === "ACC") {
-        const vals = payload.split(",").map(v => parseFloat(v));
-        if (vals.length >= 3 && vals.every(v => !isNaN(v))) {
-          const t = Date.now();
-          if (kind === "GYRO") {
-            addImuSample(gyroData, t, vals[0], vals[1], vals[2]);
-          } else {
-            addImuSample(accelData, t, vals[0], vals[1], vals[2]);
-          }
-        }
-      } else if (kind === "MIC") {
-        const v = parseFloat(payload);
-        if (!isNaN(v)) {
-          addMicSample(Date.now(), v);
-        }
-      }
-    }
-
-    function parseStatus(line) {
-      // STAT:LIST:n or STAT:PATTERN:n
-      const parts = line.split(":");
-      if (parts.length < 3) return;
-      const key = parts[1];
-      const n = parseInt(parts[2], 10);
-      if (isNaN(n)) return;
-
-      if (key === "LIST") setGuiListIndex(n);
-      else if (key === "PATTERN") setGuiPatternIndex(n);
-    }
-
-    function setGuiListIndex(n) {
-      guiListIndex = n;
-      updateListDisplay();
-    }
-
-    function setGuiPatternIndex(n) {
-      guiPatternIndex = n;
-      updatePatternDisplay();
-    }
-
-    function updateListDisplay() {
-      if (guiListIndex == null) {
-        currentListLabel.textContent = "?";
-      } else {
-        currentListLabel.textContent = `${guiListIndex + 1} (device: ${guiListIndex})`;
-      }
-
-      // highlight circle
-      document.querySelectorAll(".list-circle").forEach(el => {
-        const idx = parseInt(el.dataset.list, 10);
-        if (!isNaN(idx) && guiListIndex === idx) {
-          el.classList.add("active");
-        } else {
-          el.classList.remove("active");
-        }
-      });
-    }
-
-    function updatePatternDisplay() {
-      if (guiPatternIndex == null) {
-        currentPatternLabel.textContent = "?";
-      } else {
-        currentPatternLabel.textContent = `${guiPatternIndex + 1} (device: ${guiPatternIndex})`;
-      }
-
-      const slider = document.getElementById("patternSlider");
-      const sliderLabel = document.getElementById("patternSliderLabel");
-      const guiVal = (guiPatternIndex != null ? guiPatternIndex + 1 : 1);
-      slider.value = String(guiVal);
-      sliderLabel.textContent = String(guiVal);
-    }
-
-    // ===== Graph data structures =====
-    const WINDOW_MS = 30000; // 30 seconds
-
-    // For gyro & accel: arrays of {t,x,y,z}
-    const gyroData = [];
-    const accelData = [];
-    // For mic: {t, v}
-    const micData = [];
-
-    function addImuSample(store, timeMs, x, y, z) {
-      store.push({ t: timeMs, x, y, z });
-      const cutoff = timeMs - WINDOW_MS;
-      while (store.length && store[0].t < cutoff) {
-        store.shift();
-      }
-    }
-
-    function addMicSample(timeMs, v) {
-      micData.push({ t: timeMs, v });
-      const cutoff = timeMs - WINDOW_MS;
-      while (micData.length && micData[0].t < cutoff) {
-        micData.shift();
-      }
-    }
-
-    // ===== Graph rendering =====
-    const gyroCanvas  = document.getElementById("gyroCanvas");
-    const accelCanvas = document.getElementById("accelCanvas");
-    const micCanvas   = document.getElementById("micCanvas");
-
-    const gyroCtx  = gyroCanvas.getContext("2d");
-    const accelCtx = accelCanvas.getContext("2d");
-    const micCtx   = micCanvas.getContext("2d");
-
-    function drawGraph(ctx, canvas, data, kind) {
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      ctx.fillStyle = "#050713";
-      ctx.fillRect(0, 0, w, h);
-
-      const now = Date.now();
-      const minT = now - WINDOW_MS;
-      const maxT = now;
-
-      // Determine value range
-      let minVal = Infinity;
-      let maxVal = -Infinity;
-
-      if (kind === "mic") {
-        if (!data.length) return;
-        for (const s of data) {
-          if (s.v < minVal) minVal = s.v;
-          if (s.v > maxVal) maxVal = s.v;
-        }
-      } else {
-        if (!data.length) return;
-        for (const s of data) {
-          minVal = Math.min(minVal, s.x, s.y, s.z);
-          maxVal = Math.max(maxVal, s.x, s.y, s.z);
-        }
-      }
-
-      if (minVal === Infinity || maxVal === -Infinity) return;
-      if (minVal === maxVal) {
-        // Avoid flatline range
-        minVal -= 1;
-        maxVal += 1;
-      }
-
-      function xFromT(t) {
-        const frac = (t - minT) / (maxT - minT);
-        return Math.max(0, Math.min(w, frac * w));
-      }
-
-      function yFromV(v) {
-        const frac = (v - minVal) / (maxVal - minVal);
-        return h - frac * h;
-      }
-
-      // Grid (simple horizontal midline)
-      ctx.strokeStyle = "#222741";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, h / 2);
-      ctx.lineTo(w, h / 2);
-      ctx.stroke();
-
-      // Draw lines
-      const colors = kind === "mic"
-        ? ["#4fa9ff"]
-        : ["#f94144", "#43aa8b", "#f9c74f"]; // x, y, z
-
-      function drawSeries(getVal, color) {
-        ctx.beginPath();
-        let first = true;
-        for (const s of data) {
-          const x = xFromT(s.t);
-          const y = yFromV(getVal(s));
-          if (first) {
-            ctx.moveTo(x, y);
-            first = false;
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-
-      if (kind === "mic") {
-        drawSeries(s => s.v, colors[0]);
-      } else {
-        drawSeries(s => s.x, colors[0]);
-        drawSeries(s => s.y, colors[1]);
-        drawSeries(s => s.z, colors[2]);
-      }
-    }
-
-    function animationLoop() {
-      drawGraph(gyroCtx, gyroCanvas, gyroData, "gyro");
-      drawGraph(accelCtx, accelCanvas, accelData, "accel");
-      drawGraph(micCtx, micCanvas, micData, "mic");
-      requestAnimationFrame(animationLoop);
-    }
-    requestAnimationFrame(animationLoop);
-
-    // ===== UI wiring =====
-
-    // Connect / disconnect
-    document.getElementById("connectA").addEventListener("click", () => connectStick("A"));
-    document.getElementById("disconnectA").addEventListener("click", () => disconnectStick("A"));
-    document.getElementById("connectB").addEventListener("click", () => connectStick("B"));
-    document.getElementById("disconnectB").addEventListener("click", () => disconnectStick("B"));
-
-    // List circles
-    document.getElementById("listCircles").addEventListener("click", e => {
-      const el = e.target.closest(".list-circle");
-      if (!el) return;
-      const idx = parseInt(el.dataset.list, 10);
-      if (isNaN(idx)) return;
-      // internal 0-based
-      setGuiListIndex(idx);
-      sendCommand(`SET:LIST:${idx}`);
-    });
-
-    // Next/Prev list
-    document.getElementById("nextList").addEventListener("click", () => {
-      sendCommand("CMD:NEXT_LIST");
-      if (guiListIndex != null) {
-        // naive wrap through 0..8
-        guiListIndex = (guiListIndex + 1) % 9;
-        updateListDisplay();
+  function makeChart(ctx, datasets) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        parsing: false,
+        animation: false,
+        normalized: true,
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'seconds (rolling)' } },
+          y: { title: { display: true, text: 'value' } }
+        },
+        plugins: { legend: { display: true } },
+        elements: { point: { radius: 0 } }
       }
     });
+  }
 
-    document.getElementById("prevList").addEventListener("click", () => {
-      sendCommand("CMD:PREV_LIST");
-      if (guiListIndex != null) {
-        guiListIndex = (guiListIndex + 9 - 1) % 9;
-        updateListDisplay();
-      }
+  const accelChart = makeChart(document.getElementById('accelChart'), [
+    { label:'Primary', data: accelP, borderColor:'#4aa3ff', tension:0.15 },
+    { label:'Secondary', data: accelS, borderColor:'#ff5a5a', tension:0.15 }
+  ]);
+  const gyroChart  = makeChart(document.getElementById('gyroChart'), [
+    { label:'Gyro', data: gyroP, borderColor:'#4aa3ff', tension:0.15 }
+  ]);
+  const micChart   = makeChart(document.getElementById('micChart'), [
+    { label:'Primary', data: micP, borderColor:'#4aa3ff', tension:0.15 },
+    { label:'Secondary', data: micS, borderColor:'#ff5a5a', tension:0.15 }
+  ]);
+
+  function setConnectedUI(ok) {
+    connDot.style.background = ok ? '#34c759' : '#777';
+    connText.textContent = ok ? 'Connected' : 'Disconnected';
+  }
+
+  async function connect() {
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'FiddleStIX_V1' }],
+      optionalServices: [UART_SERVICE]
     });
 
-    // Pattern slider & controls
-    const patternSlider = document.getElementById("patternSlider");
-    const patternSliderLabel = document.getElementById("patternSliderLabel");
+    deviceNameEl.textContent = device.name || '(unnamed)';
+    device.addEventListener('gattserverdisconnected', () => setConnectedUI(false));
 
-    patternSlider.addEventListener("input", () => {
-      patternSliderLabel.textContent = patternSlider.value;
-    });
+    server = await device.gatt.connect();
+    service = await server.getPrimaryService(UART_SERVICE);
+    txChar = await service.getCharacteristic(UART_TX);
+    rxChar = await service.getCharacteristic(UART_RX);
 
-    document.getElementById("setPattern").addEventListener("click", () => {
-      const guiVal = parseInt(patternSlider.value, 10) || 1;
-      const internal = guiVal - 1; // 1-based → 0-based
-      setGuiPatternIndex(internal);
-      sendCommand(`SET:PATTERN:${internal}`);
-    });
+    await rxChar.startNotifications();
+    rxChar.addEventListener('characteristicvaluechanged', onNotify);
 
-    document.getElementById("nextPattern").addEventListener("click", () => {
-      sendCommand("CMD:NEXT_PATTERN");
-      if (guiPatternIndex != null) {
-        guiPatternIndex = (guiPatternIndex + 1) % 20;
-        updatePatternDisplay();
-      }
-    });
+    setConnectedUI(true);
+  }
 
-    document.getElementById("prevPattern").addEventListener("click", () => {
-      sendCommand("CMD:PREV_PATTERN");
-      if (guiPatternIndex != null) {
-        guiPatternIndex = (guiPatternIndex + 20 - 1) % 20;
-        updatePatternDisplay();
-      }
-    });
+  function onNotify(e) {
+    const chunk = new TextDecoder().decode(e.target.value);
+    rxBuf += chunk;
 
-    // Favorite
-    document.getElementById("favorite").addEventListener("click", () => {
-      sendCommand("CMD:FAVORITE");
-    });
-
-    // Brightness slider (GUI 1–8 → internal 0–7)
-    const brightSlider = document.getElementById("brightSlider");
-    const brightLabel  = document.getElementById("brightLabel");
-
-    function updateBrightLabel() {
-      const guiVal = parseInt(brightSlider.value, 10) || 1;
-      const internal = guiVal - 1;
-      brightLabel.textContent = `${guiVal} (device: ${internal})`;
+    let idx;
+    while ((idx = rxBuf.indexOf('\n')) >= 0) {
+      const line = rxBuf.slice(0, idx).trim();
+      rxBuf = rxBuf.slice(idx + 1);
+      if (line) handleLine(line);
     }
+  }
 
-    brightSlider.addEventListener("input", updateBrightLabel);
-    updateBrightLabel();
+  // RX rate
+  let lastRateMs = performance.now();
+  let rateCount = 0;
 
-    document.getElementById("brightSend").addEventListener("click", () => {
-      const guiVal = parseInt(brightSlider.value, 10) || 1;
-      let internal = guiVal - 1; // 0..7
-      if (internal < 0) internal = 0;
-      if (internal > 7) internal = 7;
-      sendCommand(`SET:BRIGHT:${internal}`);
-    });
+  function handleLine(line) {
+    rawEl.textContent = line;
 
-    // Shuffle_T slider: 0.5..10.0 s (5..100 -> /10)
-    const tSlider = document.getElementById("tSlider");
-    const tLabel  = document.getElementById("tLabel");
-
-    function updateTLabel() {
-      const raw = parseInt(tSlider.value, 10);
-      const seconds = raw / 10.0;
-      let ms = Math.round(seconds * 1000);
-      if (ms < 500) ms = 500;
-      tLabel.textContent = `${seconds.toFixed(1)} s (${ms} ms)`;
-    }
-
-    tSlider.addEventListener("input", updateTLabel);
-    updateTLabel();
-
-    document.getElementById("tSend").addEventListener("click", () => {
-      const raw = parseInt(tSlider.value, 10);
-      const seconds = raw / 10.0;
-      let ms = Math.round(seconds * 1000);
-      if (ms < 500) ms = 500;
-      sendCommand(`SET:SHUFFLE_T:${ms}`);
-    });
-
-    // Flags
-    document.getElementById("sendFlags").addEventListener("click", () => {
-      const shuffle = document.getElementById("flagShuffle").checked ? 1 : 0;
-      const sleep   = document.getElementById("flagSleepTimer").checked ? 1 : 0;
-      const lock    = document.getElementById("flagPowerLock").checked ? 1 : 0;
-
-      sendCommand(`SET:BOOL:shuffle:${shuffle}`);
-      sendCommand(`SET:BOOL:sleepTimer:${sleep}`);
-      sendCommand(`SET:BOOL:powerLock:${lock}`);
-    });
-
-    // Special commands
-    document.getElementById("goSleep").addEventListener("click", () => {
-      sendCommand("CMD:GO_SLEEP");
-    });
-
-    document.getElementById("rave").addEventListener("click", () => {
-      sendCommand("CMD:RAVE");
-    });
-
-    // Raw input
-    document.getElementById("rawSend").addEventListener("click", () => {
-      const v = document.getElementById("rawInput").value.trim();
-      if (v) sendCommand(v);
-    });
-
-    document.getElementById("rawInput").addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        document.getElementById("rawSend").click();
+    if (line.startsWith('SAMP2,')) {
+      rateCount++;
+      const now = performance.now();
+      if (now - lastRateMs >= 1000) {
+        hzText.textContent = (rateCount / ((now - lastRateMs)/1000)).toFixed(1);
+        lastRateMs = now;
+        rateCount = 0;
       }
-    });
-  </script>
+    } else return;
+
+    const parts = line.split(',');
+    if (parts.length < 17) return;
+
+    const ms = Number(parts[1]);
+    const state = Number(parts[3]);
+    const list = Number(parts[4]);
+    const pat = Number(parts[5]);
+
+    const axP_ = Number(parts[6]), ayP_ = Number(parts[7]), azP_ = Number(parts[8]);
+    const axS_ = Number(parts[9]), ayS_ = Number(parts[10]), azS_ = Number(parts[11]);
+    const gx_ = Number(parts[12]), gy_ = Number(parts[13]), gz_ = Number(parts[14]);
+    const micP_ = Number(parts[15]), micS_ = Number(parts[16]);
+
+    stateText.textContent = stateNames[state] || state;
+    listText.textContent = `${list+1}`;
+    patternText.textContent = `${pat+1}`;
+
+    const t = ms / 1000;
+    const aMagP = Math.hypot(axP_, ayP_, azP_);
+    const aMagS = Math.hypot(axS_, ayS_, azS_);
+    const gMag  = Math.hypot(gx_, gy_, gz_);
+
+    pushRolling(accelP, t, aMagP);
+    pushRolling(accelS, t, aMagS);
+    pushRolling(gyroP,  t, gMag);
+    pushRolling(micP,   t, micP_);
+    pushRolling(micS,   t, micS_);
+
+    accelChart.update('none');
+    gyroChart.update('none');
+    micChart.update('none');
+  }
+
+  function pushRolling(arr, t, y) {
+    arr.push({ x: t, y });
+    const minT = t - MAX_SECONDS;
+    while (arr.length && arr[0].x < minT) arr.shift();
+  }
+
+  async function sendLine(line) {
+    if (!txChar) return;
+    const data = new TextEncoder().encode(line + '\n');
+    await txChar.writeValue(data);
+  }
+
+  document.getElementById('connectBtn').onclick = connect;
+
+  // Buttons
+  document.getElementById('nextListBtn').onclick = () => sendLine('CMD:NEXT_LIST');
+  document.getElementById('prevListBtn').onclick = () => sendLine('CMD:PREV_LIST');
+  document.getElementById('nextPatternBtn').onclick = () => sendLine('CMD:NEXT_PATTERN');
+  document.getElementById('prevPatternBtn').onclick = () => sendLine('CMD:PREV_PATTERN');
+  document.getElementById('favoriteBtn').onclick = () => sendLine('CMD:FAVORITE');
+  document.getElementById('sleepBtn').onclick = () => sendLine('CMD:GOTO_SLEEP');
+  document.getElementById('raveBtn').onclick = () => sendLine('CMD:RAVE_TIME');
+  document.getElementById('offBtn').onclick = () => sendLine('CMD:OFF');
+
+  // Slider mapping: GUI 1..100 => device 0..99
+  patternSlider.oninput = () => { patternSliderVal.textContent = patternSlider.value; };
+  patternSlider.onchange = () => {
+    const v = Math.max(1, Math.min(100, Number(patternSlider.value)));
+    sendLine(`SET:PATTERN:${v-1}`);
+  };
+
+  brightnessSlider.oninput = () => {
+    brightnessVal.textContent = brightnessSlider.value;
+    sendLine(`SET:BRIGHTNESS:${brightnessSlider.value}`);
+  };
+
+  shuffleSlider.oninput = () => {
+    shuffleVal.textContent = shuffleSlider.value;
+    sendLine(`SET:SHUFFLE_T:${shuffleSlider.value}`);
+  };
+
+  document.getElementById('toggleShuffleP').onclick = () => sendLine('TOGGLE:SHUFFLE_P');
+  document.getElementById('toggleSleepTimer').onclick = () => sendLine('TOGGLE:SLEEPTIMER');
+  document.getElementById('togglePowerLock').onclick = () => sendLine('TOGGLE:POWERLOCK');
+
+  setConnectedUI(false);
+</script>
 </body>
 </html>
