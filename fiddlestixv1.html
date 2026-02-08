@@ -1,315 +1,977 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FiddleStIX V1 Control</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>FiddleStyx V4 Control GUI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    :root { color-scheme: dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; background:#0b0f14; color:#e8eef7; }
-    .row { display:flex; gap:10px; flex-wrap: wrap; align-items: center; }
-    .card { background:#121926; border:1px solid #1f2a3a; border-radius:12px; padding:12px; margin:10px 0; }
-    button { background:#1f6feb; border:none; color:white; padding:10px 12px; border-radius:10px; cursor:pointer; }
-    button.secondary { background:#2d3646; }
-    button.danger { background:#d73a49; }
-    button:disabled { opacity:0.5; cursor:not-allowed; }
-    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0f1623; border:1px solid #1f2a3a; }
-    .dot { width:10px; height:10px; border-radius:50%; background:#777; }
-    input[type="range"] { width: 260px; }
-    .lists { display:flex; gap:8px; flex-wrap: wrap; }
-    .listCircle { width:18px; height:18px; border-radius:50%; border:1px solid #fff3; cursor:pointer; }
-    .grid { display:grid; grid-template-columns: 1fr; gap:12px; }
-    @media (min-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
-    .small { font-size: 12px; opacity:0.8; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050510;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      padding: 16px 24px;
+      background: radial-gradient(circle at top left, #3b82f6 0, #020617 45%);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    header small {
+      opacity: 0.8;
+      font-size: 0.8rem;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #3b82f6, #a855f7);
+      color: #f9fafb;
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.5),
+                  0 10px 30px rgba(15, 23, 42, 0.8);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.9);
+    }
+    .btn:active {
+      transform: translateY(0px) scale(0.98);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.8);
+    }
+    .btn.secondary {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.4);
+    }
+    .btn.secondary:hover {
+      filter: brightness(1.1);
+    }
+    main {
+      padding: 16px clamp(12px, 3vw, 24px);
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1.2fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .card {
+      background: radial-gradient(circle at 0 0, rgba(59,130,246,0.12), rgba(15,23,42,0.98));
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 18px 45px rgba(15,23,42,0.9);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+    }
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+    .section-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .flex-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+    }
+    .pill span.dot.red {
+      background: #f97373;
+      box-shadow: 0 0 8px rgba(248, 113, 113, 0.9);
+    }
+    .pill span.dot.amber {
+      background: #facc15;
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.9);
+    }
+    .status-line {
+      font-size: 0.85rem;
+      color: #e5e7eb;
+    }
+    .status-line span.label {
+      color: #9ca3af;
+      margin-right: 4px;
+    }
+    .status-line code {
+      font-size: 0.8rem;
+      background: rgba(15,23,42,0.9);
+      border-radius: 999px;
+      padding: 2px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .slider-group {
+      margin-bottom: 10px;
+    }
+    .slider-group label {
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      color: #e5e7eb;
+    }
+    .slider-group input[type="range"] {
+      width: 100%;
+    }
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      cursor: pointer;
+      background: rgba(15,23,42,0.9);
+    }
+    .toggle span.ind {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #4b5563;
+    }
+    .toggle.on span.ind {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+    }
+    .toggle.off span.ind {
+      background: #4b5563;
+    }
+    .list-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .list-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.45);
+      position: relative;
+      overflow: hidden;
+    }
+    .list-circle span {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0.9;
+    }
+    .list-circle.active {
+      box-shadow: 0 0 0 2px #f97316, 0 0 15px rgba(249,115,22,0.7);
+    }
+    .list-circle-label {
+      font-size: 0.7rem;
+      text-align: center;
+      margin-top: 2px;
+      color: #9ca3af;
+    }
+    .pattern-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .pattern-row input[type="number"] {
+      width: 70px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15,23,42,1);
+      color: #e5e7eb;
+      font-size: 0.85rem;
+    }
+    .pattern-row input[type="range"] {
+      flex: 1 1 auto;
+    }
+    canvas {
+      width: 100%;
+      height: 180px;
+      border-radius: 12px;
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,1), rgba(2,6,23,1));
+      box-shadow: inset 0 0 0 1px rgba(30,64,175,0.4);
+    }
+    .logs {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.7rem;
+      max-height: 160px;
+      overflow-y: auto;
+      background: rgba(15,23,42,0.9);
+      border-radius: 12px;
+      padding: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+    .logs div {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .logs div:nth-child(odd) {
+      color: #9ca3af;
+    }
+    .logs div:nth-child(even) {
+      color: #e5e7eb;
+    }
+    a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <h2>FiddleStIX V1 Control</h2>
-
-  <div class="card">
-    <div class="row">
-      <button id="connectBtn">Connect</button>
-      <span class="pill"><span id="connDot" class="dot"></span><span id="connText">Disconnected</span></span>
-      <span class="pill mono" id="deviceName">—</span>
-      <span class="pill">State: <b id="stateText">—</b></span>
-      <span class="pill">List: <b id="listText">—</b></span>
-      <span class="pill">Pattern: <b id="patternText">—</b></span>
-      <span class="pill">RX: <b id="hzText">—</b> Hz</span>
+  <header>
+    <div>
+      <h1>FiddleStyx V4 Control</h1>
+      <small>Web Bluetooth GUI · Primary stick only · Matches FiddleStyxV4 .ino protocol</small>
     </div>
+    <div class="flex-row">
+      <div class="pill">
+        <span class="dot" id="gui-dot"></span>
+        <span id="gui-status">GUI: Disconnected</span>
+      </div>
+      <div class="pill">
+        <span class="dot amber" id="sec-dot"></span>
+        <span id="sec-status">Secondary: Unknown</span>
+      </div>
+      <button class="btn" id="connect-btn">
+        <span>⚡</span> Connect to FiddleStyxV4
+      </button>
+    </div>
+  </header>
 
-    <div style="margin-top:10px" class="row">
-      <div>
-        <div class="small">Lists (click to set) — GUI shows 1–9, device uses 0–8</div>
-        <div class="lists" id="lists"></div>
+  <main>
+    <!-- LEFT: Graphs -->
+    <section>
+      <div class="card">
+        <h2>Sensor Streams</h2>
+        <div class="section-subtitle">Real-time IMU + mic level for Primary (blue) and Secondary (red)</div>
+        <div class="flex-col" style="gap:10px;">
+          <div>
+            <div class="section-subtitle">Accelerometer (ax, ay, az)</div>
+            <canvas id="accelCanvas"></canvas>
+          </div>
+          <div>
+            <div class="section-subtitle">Gyroscope (gx, gy, gz)</div>
+            <canvas id="gyroCanvas"></canvas>
+          </div>
+          <div>
+            <div class="section-subtitle">Mic Level</div>
+            <canvas id="micCanvas"></canvas>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <div class="small">Pattern (GUI 1–100, device 0–99)</div>
-        <input id="patternSlider" type="range" min="1" max="100" value="1">
-        <span class="mono" id="patternSliderVal">1</span>
+      <div class="card">
+        <h2>Telemetry & Debug</h2>
+        <div class="flex-row" style="justify-content:space-between; align-items:flex-end;">
+          <div class="flex-col">
+            <div class="status-line">
+              <span class="label">Current State:</span>
+              <code id="state-label">?</code>
+            </div>
+            <div class="status-line">
+              <span class="label">List / Pattern:</span>
+              <code><span id="list-label">?</span> / <span id="pattern-label">?</span></code>
+            </div>
+          </div>
+          <button class="btn secondary" id="clear-log-btn">Clear Log</button>
+        </div>
+        <div class="logs" id="log"></div>
       </div>
-    </div>
+    </section>
 
-    <div style="margin-top:10px" class="row">
-      <button id="prevListBtn" class="secondary">Previous Page</button>
-      <button id="nextListBtn" class="secondary">Next Page</button>
-      <button id="prevPatternBtn" class="secondary">Previous Pattern</button>
-      <button id="nextPatternBtn" class="secondary">Next Pattern</button>
-      <button id="favoriteBtn" class="secondary">Favorite</button>
-      <button id="sleepBtn" class="secondary">Go To Sleep</button>
-      <button id="raveBtn" class="secondary">Rave O’Clock</button>
-      <button id="offBtn" class="danger">OFF</button>
-    </div>
-
-    <div style="margin-top:10px" class="row">
-      <div>
-        <div class="small">Global Brightness (0–255)</div>
-        <input id="brightnessSlider" type="range" min="0" max="255" value="128">
-        <span class="mono" id="brightnessVal">128</span>
+    <!-- RIGHT: Controls -->
+    <section>
+      <div class="card">
+        <h2>Playback Controls</h2>
+        <div class="section-subtitle">Pattern navigation and states</div>
+        <div class="controls-grid">
+          <button class="btn secondary" id="prev-list-btn">⟵ Previous Page</button>
+          <button class="btn secondary" id="next-list-btn">Next Page ⟶</button>
+          <button class="btn secondary" id="prev-pattern-btn">⟵ Previous Pattern</button>
+          <button class="btn secondary" id="next-pattern-btn">Next Pattern ⟶</button>
+          <button class="btn secondary" id="favorite-btn">★ Favorite</button>
+          <button class="btn secondary" id="sleep-btn">🌙 Go To Sleep</button>
+          <button class="btn secondary" id="rave-btn">💥 Rave O’Clock</button>
+          <button class="btn secondary" id="off-btn">⏻ Turn Off</button>
+        </div>
       </div>
-      <div>
-        <div class="small">Shuffle T (ms)</div>
-        <input id="shuffleSlider" type="range" min="1000" max="60000" step="250" value="8000">
-        <span class="mono" id="shuffleVal">8000</span>
+
+      <div class="card">
+        <h2>List & Pattern Select</h2>
+        <div class="section-subtitle">Click a list "page" and pick a pattern index</div>
+        <div class="list-row">
+          <!-- 9 list circles: WHITE, RED, ORANGE, YELLOW, GREEN, BLUE, INDIGO, VIOLET, BLACK -->
+          <div class="flex-col">
+            <div class="list-circle" data-list="0" title="White / Favorites">
+              <span style="background: radial-gradient(circle, #ffffff, #e5e7eb);"></span>
+            </div>
+            <div class="list-circle-label">W</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="1" title="Red">
+              <span style="background: radial-gradient(circle, #ef4444, #7f1d1d);"></span>
+            </div>
+            <div class="list-circle-label">R</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="2" title="Orange">
+              <span style="background: radial-gradient(circle, #fb923c, #7c2d12);"></span>
+            </div>
+            <div class="list-circle-label">O</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="3" title="Yellow">
+              <span style="background: radial-gradient(circle, #facc15, #854d0e);"></span>
+            </div>
+            <div class="list-circle-label">Y</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="4" title="Green">
+              <span style="background: radial-gradient(circle, #22c55e, #064e3b);"></span>
+            </div>
+            <div class="list-circle-label">G</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="5" title="Blue">
+              <span style="background: radial-gradient(circle, #3b82f6, #1e3a8a);"></span>
+            </div>
+            <div class="list-circle-label">B</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="6" title="Indigo">
+              <span style="background: radial-gradient(circle, #6366f1, #312e81);"></span>
+            </div>
+            <div class="list-circle-label">I</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="7" title="Violet">
+              <span style="background: radial-gradient(circle, #a855f7, #4c1d95);"></span>
+            </div>
+            <div class="list-circle-label">V</div>
+          </div>
+          <div class="flex-col">
+            <div class="list-circle" data-list="8" title="Black / Special">
+              <span style="background: radial-gradient(circle, #111827, #020617);"></span>
+            </div>
+            <div class="list-circle-label">Bk</div>
+          </div>
+        </div>
+
+        <div class="pattern-row">
+          <label for="pattern-input" style="font-size:0.8rem; color:#e5e7eb;">Pattern #</label>
+          <input type="number" id="pattern-input" min="0" max="99" value="0" />
+          <input type="range" id="pattern-slider" min="0" max="99" value="0" />
+        </div>
+        <div class="section-subtitle">Lists and patterns are 0–8 and 0–99 internally (GUI shows 1-based abbreviations).</div>
       </div>
-    </div>
 
-    <div style="margin-top:10px" class="row">
-      <button id="toggleShuffleP" class="secondary">Toggle Shuffle_P</button>
-      <button id="toggleSleepTimer" class="secondary">Toggle SleepTimer</button>
-      <button id="togglePowerLock" class="secondary">Toggle PowerLock</button>
-    </div>
+      <div class="card">
+        <h2>Parameters</h2>
+        <div class="slider-group">
+          <label>
+            <span>Global Brightness</span>
+            <span id="brightness-label">180</span>
+          </label>
+          <input type="range" id="brightness-slider" min="0" max="255" value="180" />
+        </div>
+        <div class="slider-group">
+          <label>
+            <span>Shuffle Dwell (ms)</span>
+            <span id="shuffle-label">12000</span>
+          </label>
+          <input type="range" id="shuffle-slider" min="1000" max="60000" step="500" value="12000" />
+        </div>
+        <div class="toggle-row">
+          <div class="toggle off" id="toggle-powerlock">
+            <span class="ind"></span>
+            <span>Power Lock</span>
+          </div>
+          <div class="toggle on" id="toggle-sleeptimer">
+            <span class="ind"></span>
+            <span>Sleep Timer</span>
+          </div>
+          <div class="toggle off" id="toggle-shuffle">
+            <span class="ind"></span>
+            <span>Shuffle P</span>
+          </div>
+        </div>
+      </div>
 
-    <div class="small" style="margin-top:10px">
-      Incoming telemetry:
-      <span class="mono">SAMP2,ms,role,state,list,pat,axP,ayP,azP,axS,ayS,azS,gxP,gyP,gzP,micP,micS</span>
-    </div>
-  </div>
+      <div class="card">
+        <h2>Notes</h2>
+        <div class="section-subtitle">
+          This GUI speaks the same text protocol as the V4 firmware:
+          <code>CMD:*</code>, <code>SET:*</code>, <code>TOGGLE:*</code>, <code>SAMP</code>, <code>SAMP2</code>.
+        </div>
+        <ul style="font-size:0.8rem; color:#9ca3af; padding-left:18px; margin: 4px 0;">
+          <li>Flash the same <code>FiddleStyxV4</code> .ino to both ends.</li>
+          <li>Use the on-stick long-hold (~6s within first 10s after boot) to swap Primary/Secondary roles.</li>
+          <li>This page should be opened in Chrome/Edge with Web Bluetooth enabled.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Accelerometer magnitude — Primary vs Secondary</h3>
-      <canvas id="accelChart" height="160"></canvas>
-    </div>
-    <div class="card">
-      <h3>Gyroscope magnitude (Primary only)</h3>
-      <canvas id="gyroChart" height="160"></canvas>
-    </div>
-    <div class="card">
-      <h3>Mic — Primary vs Secondary</h3>
-      <canvas id="micChart" height="160"></canvas>
-    </div>
-    <div class="card">
-      <h3>Latest line</h3>
-      <pre id="raw" class="mono" style="white-space:pre-wrap; word-break:break-word;"></pre>
-    </div>
-  </div>
+  <script>
+    // ========= WEB BLUETOOTH & PROTOCOL LAYER =========
 
-<script>
-  const UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_TX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_RX      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+    let device = null;
+    let server = null;
+    let uartService = null;
+    let txCharacteristic = null; // write
+    let rxCharacteristic = null; // notify
 
-  let device, server, service, txChar, rxChar;
-  let rxBuf = '';
+    const NORDIC_UART_SERVICE_UUID      = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const NORDIC_UART_TX_CHAR_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // write
+    const NORDIC_UART_RX_CHAR_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // notify
 
-  const connDot = document.getElementById('connDot');
-  const connText = document.getElementById('connText');
-  const deviceNameEl = document.getElementById('deviceName');
-  const stateText = document.getElementById('stateText');
-  const listText = document.getElementById('listText');
-  const patternText = document.getElementById('patternText');
-  const rawEl = document.getElementById('raw');
-  const hzText = document.getElementById('hzText');
+    let guiConnected = false;
+    let lineBuffer = "";
 
-  const patternSlider = document.getElementById('patternSlider');
-  const patternSliderVal = document.getElementById('patternSliderVal');
-  const brightnessSlider = document.getElementById('brightnessSlider');
-  const brightnessVal = document.getElementById('brightnessVal');
-  const shuffleSlider = document.getElementById('shuffleSlider');
-  const shuffleVal = document.getElementById('shuffleVal');
+    const connectBtn = document.getElementById("connect-btn");
+    const guiDot = document.getElementById("gui-dot");
+    const guiStatus = document.getElementById("gui-status");
+    const secDot = document.getElementById("sec-dot");
+    const secStatus = document.getElementById("sec-status");
+    const logEl = document.getElementById("log");
+    const clearLogBtn = document.getElementById("clear-log-btn");
 
-  const stateNames = ["OFF","PLAY","SLEEP","SHUFFLE","PAIRING","L_SELECT","B_SELECT","T_SELECT"];
-  const listColors = ['#ffffff','#ff3b30','#ff9500','#ffcc00','#34c759','#0a84ff','#5e5ce6','#bf5af2','#111111'];
+    const stateLabel = document.getElementById("state-label");
+    const listLabel = document.getElementById("list-label");
+    const patternLabel = document.getElementById("pattern-label");
 
-  const listsDiv = document.getElementById('lists');
-  listColors.forEach((c, idx) => {
-    const d = document.createElement('div');
-    d.className = 'listCircle';
-    d.style.background = c;
-    d.title = `List ${idx+1}`;
-    d.onclick = () => sendLine(`SET:LIST:${idx}`);
-    listsDiv.appendChild(d);
-  });
+    const listCircles = Array.from(document.querySelectorAll(".list-circle"));
+    const patternInput = document.getElementById("pattern-input");
+    const patternSlider = document.getElementById("pattern-slider");
 
-  const MAX_SECONDS = 30;
-  const accelP = [], accelS = [], gyroP = [], micP = [], micS = [];
+    const brightnessSlider = document.getElementById("brightness-slider");
+    const brightnessLabel = document.getElementById("brightness-label");
+    const shuffleSlider = document.getElementById("shuffle-slider");
+    const shuffleLabel = document.getElementById("shuffle-label");
 
-  function makeChart(ctx, datasets) {
-    return new Chart(ctx, {
-      type: 'line',
-      data: { datasets },
-      options: {
-        parsing: false,
-        animation: false,
-        normalized: true,
-        scales: {
-          x: { type: 'linear', title: { display: true, text: 'seconds (rolling)' } },
-          y: { title: { display: true, text: 'value' } }
-        },
-        plugins: { legend: { display: true } },
-        elements: { point: { radius: 0 } }
+    const togglePowerlock = document.getElementById("toggle-powerlock");
+    const toggleSleeptimer = document.getElementById("toggle-sleeptimer");
+    const toggleShuffle = document.getElementById("toggle-shuffle");
+
+    const prevListBtn = document.getElementById("prev-list-btn");
+    const nextListBtn = document.getElementById("next-list-btn");
+    const prevPatternBtn = document.getElementById("prev-pattern-btn");
+    const nextPatternBtn = document.getElementById("next-pattern-btn");
+    const favoriteBtn = document.getElementById("favorite-btn");
+    const sleepBtn = document.getElementById("sleep-btn");
+    const raveBtn = document.getElementById("rave-btn");
+    const offBtn = document.getElementById("off-btn");
+
+    // Graph canvases
+    const accelCanvas = document.getElementById("accelCanvas");
+    const gyroCanvas = document.getElementById("gyroCanvas");
+    const micCanvas = document.getElementById("micCanvas");
+
+    const accelCtx = accelCanvas.getContext("2d");
+    const gyroCtx = gyroCanvas.getContext("2d");
+    const micCtx = micCanvas.getContext("2d");
+
+    // Data buffers for ~30s at 20Hz => 600 samples
+    const MAX_SAMPLES = 600;
+    const accelData = {
+      primary: { ax: [], ay: [], az: [] },
+      secondary: { ax: [], ay: [], az: [] }
+    };
+    const gyroData = {
+      primary: { gx: [], gy: [], gz: [] },
+      secondary: { gx: [], gy: [], gz: [] }
+    };
+    const micData = {
+      primary: [],
+      secondary: []
+    };
+
+    let currentListNum = 1;   // 0-8, default red
+    let currentPatternNum = 0; // 0-99
+
+    function log(message) {
+      const d = document.createElement("div");
+      d.textContent = message;
+      logEl.appendChild(d);
+      while (logEl.children.length > 120) {
+        logEl.removeChild(logEl.firstChild);
       }
-    });
-  }
-
-  const accelChart = makeChart(document.getElementById('accelChart'), [
-    { label:'Primary', data: accelP, borderColor:'#4aa3ff', tension:0.15 },
-    { label:'Secondary', data: accelS, borderColor:'#ff5a5a', tension:0.15 }
-  ]);
-  const gyroChart  = makeChart(document.getElementById('gyroChart'), [
-    { label:'Gyro', data: gyroP, borderColor:'#4aa3ff', tension:0.15 }
-  ]);
-  const micChart   = makeChart(document.getElementById('micChart'), [
-    { label:'Primary', data: micP, borderColor:'#4aa3ff', tension:0.15 },
-    { label:'Secondary', data: micS, borderColor:'#ff5a5a', tension:0.15 }
-  ]);
-
-  function setConnectedUI(ok) {
-    connDot.style.background = ok ? '#34c759' : '#777';
-    connText.textContent = ok ? 'Connected' : 'Disconnected';
-  }
-
-  async function connect() {
-    device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: 'FiddleStIX_V1' }],
-      optionalServices: [UART_SERVICE]
-    });
-
-    deviceNameEl.textContent = device.name || '(unnamed)';
-    device.addEventListener('gattserverdisconnected', () => setConnectedUI(false));
-
-    server = await device.gatt.connect();
-    service = await server.getPrimaryService(UART_SERVICE);
-    txChar = await service.getCharacteristic(UART_TX);
-    rxChar = await service.getCharacteristic(UART_RX);
-
-    await rxChar.startNotifications();
-    rxChar.addEventListener('characteristicvaluechanged', onNotify);
-
-    setConnectedUI(true);
-  }
-
-  function onNotify(e) {
-    const chunk = new TextDecoder().decode(e.target.value);
-    rxBuf += chunk;
-
-    let idx;
-    while ((idx = rxBuf.indexOf('\n')) >= 0) {
-      const line = rxBuf.slice(0, idx).trim();
-      rxBuf = rxBuf.slice(idx + 1);
-      if (line) handleLine(line);
+      logEl.scrollTop = logEl.scrollHeight;
     }
-  }
 
-  // RX rate
-  let lastRateMs = performance.now();
-  let rateCount = 0;
+    clearLogBtn.addEventListener("click", () => {
+      logEl.innerHTML = "";
+    });
 
-  function handleLine(line) {
-    rawEl.textContent = line;
-
-    if (line.startsWith('SAMP2,')) {
-      rateCount++;
-      const now = performance.now();
-      if (now - lastRateMs >= 1000) {
-        hzText.textContent = (rateCount / ((now - lastRateMs)/1000)).toFixed(1);
-        lastRateMs = now;
-        rateCount = 0;
+    function setGuiConnected(on) {
+      guiConnected = on;
+      if (on) {
+        guiDot.classList.remove("red");
+        guiDot.classList.add("dot");
+        guiDot.style.background = "#22c55e";
+        guiStatus.textContent = "GUI: Connected";
+        connectBtn.textContent = "Disconnect";
+      } else {
+        guiDot.classList.add("red");
+        guiStatus.textContent = "GUI: Disconnected";
+        connectBtn.textContent = "Connect to FiddleStyxV4";
       }
-    } else return;
+    }
 
-    const parts = line.split(',');
-    if (parts.length < 17) return;
+    function sendLine(line) {
+      if (!guiConnected || !txCharacteristic) return;
+      const enc = new TextEncoder();
+      const data = enc.encode(line);
+      return txCharacteristic.writeValue(data).catch(err => {
+        console.error("Write error:", err);
+        log("Write error: " + err);
+      });
+    }
 
-    const ms = Number(parts[1]);
-    const state = Number(parts[3]);
-    const list = Number(parts[4]);
-    const pat = Number(parts[5]);
+    async function connectToDevice() {
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          filters: [
+            { namePrefix: "FiddleStyxV4" } // matches BLE_NAME_PRIMARY + optional suffix
+          ],
+          optionalServices: [NORDIC_UART_SERVICE_UUID]
+        });
+        log("Device chosen: " + device.name);
+        device.addEventListener("gattserverdisconnected", onDisconnected);
 
-    const axP_ = Number(parts[6]), ayP_ = Number(parts[7]), azP_ = Number(parts[8]);
-    const axS_ = Number(parts[9]), ayS_ = Number(parts[10]), azS_ = Number(parts[11]);
-    const gx_ = Number(parts[12]), gy_ = Number(parts[13]), gz_ = Number(parts[14]);
-    const micP_ = Number(parts[15]), micS_ = Number(parts[16]);
+        server = await device.gatt.connect();
+        uartService = await server.getPrimaryService(NORDIC_UART_SERVICE_UUID);
 
-    stateText.textContent = stateNames[state] || state;
-    listText.textContent = `${list+1}`;
-    patternText.textContent = `${pat+1}`;
+        txCharacteristic = await uartService.getCharacteristic(NORDIC_UART_TX_CHAR_UUID);
+        rxCharacteristic = await uartService.getCharacteristic(NORDIC_UART_RX_CHAR_UUID);
 
-    const t = ms / 1000;
-    const aMagP = Math.hypot(axP_, ayP_, azP_);
-    const aMagS = Math.hypot(axS_, ayS_, azS_);
-    const gMag  = Math.hypot(gx_, gy_, gz_);
+        await rxCharacteristic.startNotifications();
+        rxCharacteristic.addEventListener("characteristicvaluechanged", handleNotifications);
 
-    pushRolling(accelP, t, aMagP);
-    pushRolling(accelS, t, aMagS);
-    pushRolling(gyroP,  t, gMag);
-    pushRolling(micP,   t, micP_);
-    pushRolling(micS,   t, micS_);
+        setGuiConnected(true);
+        log("Connected and notifications started.");
+      } catch (error) {
+        console.error(error);
+        log("Connection error: " + error);
+        setGuiConnected(false);
+      }
+    }
 
-    accelChart.update('none');
-    gyroChart.update('none');
-    micChart.update('none');
-  }
+    function onDisconnected() {
+      log("Device disconnected.");
+      setGuiConnected(false);
+    }
 
-  function pushRolling(arr, t, y) {
-    arr.push({ x: t, y });
-    const minT = t - MAX_SECONDS;
-    while (arr.length && arr[0].x < minT) arr.shift();
-  }
+    async function disconnectFromDevice() {
+      if (device && device.gatt.connected) {
+        await device.gatt.disconnect();
+      }
+    }
 
-  async function sendLine(line) {
-    if (!txChar) return;
-    const data = new TextEncoder().encode(line + '\n');
-    await txChar.writeValue(data);
-  }
+    function handleNotifications(event) {
+      const dv = event.target.value;
+      const dec = new TextDecoder("utf-8");
+      const text = dec.decode(dv);
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === "\n") {
+          const line = lineBuffer.trim();
+          lineBuffer = "";
+          if (line.length > 0) {
+            handleLineFromDevice(line);
+          }
+        } else if (ch !== "\r") {
+          lineBuffer += ch;
+        }
+      }
+    }
 
-  document.getElementById('connectBtn').onclick = connect;
+    function handleLineFromDevice(line) {
+      log("RX: " + line);
 
-  // Buttons
-  document.getElementById('nextListBtn').onclick = () => sendLine('CMD:NEXT_LIST');
-  document.getElementById('prevListBtn').onclick = () => sendLine('CMD:PREV_LIST');
-  document.getElementById('nextPatternBtn').onclick = () => sendLine('CMD:NEXT_PATTERN');
-  document.getElementById('prevPatternBtn').onclick = () => sendLine('CMD:PREV_PATTERN');
-  document.getElementById('favoriteBtn').onclick = () => sendLine('CMD:FAVORITE');
-  document.getElementById('sleepBtn').onclick = () => sendLine('CMD:GOTO_SLEEP');
-  document.getElementById('raveBtn').onclick = () => sendLine('CMD:RAVE_TIME');
-  document.getElementById('offBtn').onclick = () => sendLine('CMD:OFF');
+      if (line.startsWith("SAMP2,")) {
+        parseSamp2(line);
+      } else if (line.startsWith("SAMP,")) {
+        parseSamp(line);
+      } else if (line.startsWith("MIDI,")) {
+        // Hook for MIDI display if you want later
+      } else if (line.startsWith("SYNC:STATE,")) {
+        // We don't expect these from Primary -> GUI in this firmware, but ignore if we see them
+      }
+    }
 
-  // Slider mapping: GUI 1..100 => device 0..99
-  patternSlider.oninput = () => { patternSliderVal.textContent = patternSlider.value; };
-  patternSlider.onchange = () => {
-    const v = Math.max(1, Math.min(100, Number(patternSlider.value)));
-    sendLine(`SET:PATTERN:${v-1}`);
-  };
+    // STATE, LIST, PATTERN mapping for label display
+    const stateNames = {
+      0: "OFF",
+      1: "PLAY",
+      2: "SLEEP",
+      3: "SHUFFLE",
+      4: "PAIRING",
+      5: "L_SELECT",
+      6: "B_SELECT",
+      7: "T_SELECT"
+    };
+    const listNames = {
+      0: "WHITE",
+      1: "RED",
+      2: "ORANGE",
+      3: "YELLOW",
+      4: "GREEN",
+      5: "BLUE",
+      6: "INDIGO",
+      7: "VIOLET",
+      8: "BLACK"
+    };
 
-  brightnessSlider.oninput = () => {
-    brightnessVal.textContent = brightnessSlider.value;
-    sendLine(`SET:BRIGHTNESS:${brightnessSlider.value}`);
-  };
+    function parseSamp(line) {
+      // SAMP,<ms>,<role>,<state>,<list>,<pattern>,<ax>,<ay>,<az>,<gx>,<gy>,<gz>,<mic>
+      const parts = line.split(",");
+      if (parts.length < 13) return;
+      const ms = parseInt(parts[1], 10);
+      const role = parseInt(parts[2], 10);
+      const state = parseInt(parts[3], 10);
+      const list = parseInt(parts[4], 10);
+      const pattern = parseInt(parts[5], 10);
+      const ax = parseFloat(parts[6]);
+      const ay = parseFloat(parts[7]);
+      const az = parseFloat(parts[8]);
+      const gx = parseFloat(parts[9]);
+      const gy = parseFloat(parts[10]);
+      const gz = parseFloat(parts[11]);
+      const mic = parseInt(parts[12], 10);
 
-  shuffleSlider.oninput = () => {
-    shuffleVal.textContent = shuffleSlider.value;
-    sendLine(`SET:SHUFFLE_T:${shuffleSlider.value}`);
-  };
+      // Primary fields
+      if (role === 0) {
+        currentListNum = list;
+        currentPatternNum = pattern;
+        updateStateUI(state, list, pattern);
 
-  document.getElementById('toggleShuffleP').onclick = () => sendLine('TOGGLE:SHUFFLE_P');
-  document.getElementById('toggleSleepTimer').onclick = () => sendLine('TOGGLE:SLEEPTIMER');
-  document.getElementById('togglePowerLock').onclick = () => sendLine('TOGGLE:POWERLOCK');
+        pushAccelSample("primary", ax, ay, az);
+        pushGyroSample("primary", gx, gy, gz);
+        pushMicSample("primary", mic);
+      }
+    }
 
-  setConnectedUI(false);
-</script>
+    function parseSamp2(line) {
+      // SAMP2,<ms>,ax1,ay1,az1,gx1,gy1,gz1,mic1,ax2,ay2,az2,gx2,gy2,gz2,mic2
+      const parts = line.split(",");
+      if (parts.length < 16) return;
+      const ax1 = parseFloat(parts[2]);
+      const ay1 = parseFloat(parts[3]);
+      const az1 = parseFloat(parts[4]);
+      const gx1 = parseFloat(parts[5]);
+      const gy1 = parseFloat(parts[6]);
+      const gz1 = parseFloat(parts[7]);
+      const mic1 = parseInt(parts[8], 10);
+
+      const ax2 = parseFloat(parts[9]);
+      const ay2 = parseFloat(parts[10]);
+      const az2 = parseFloat(parts[11]);
+      const gx2 = parseFloat(parts[12]);
+      const gy2 = parseFloat(parts[13]);
+      const gz2 = parseFloat(parts[14]);
+      const mic2 = parseInt(parts[15], 10);
+
+      secStatus.textContent = "Secondary: Linked";
+      secDot.classList.remove("amber");
+      secDot.classList.remove("red");
+      secDot.style.background = "#3b82f6";
+      secDot.style.boxShadow = "0 0 8px rgba(59,130,246,0.9)";
+
+      pushAccelSample("primary", ax1, ay1, az1);
+      pushGyroSample("primary", gx1, gy1, gz1);
+      pushMicSample("primary", mic1);
+
+      pushAccelSample("secondary", ax2, ay2, az2);
+      pushGyroSample("secondary", gx2, gy2, gz2);
+      pushMicSample("secondary", mic2);
+    }
+
+    function updateStateUI(state, list, pattern) {
+      stateLabel.textContent = stateNames[state] || ("STATE_" + state);
+      listLabel.textContent = listNames[list] || list;
+      patternLabel.textContent = pattern;
+
+      // Highlight active list circle
+      listCircles.forEach(c => {
+        const v = parseInt(c.dataset.list, 10);
+        if (v === list) c.classList.add("active");
+        else c.classList.remove("active");
+      });
+
+      // Update pattern slider/input if not actively dragging
+      patternInput.value = pattern;
+      patternSlider.value = pattern;
+    }
+
+    // ========= BUFFERS & DRAWING =========
+
+    function pushWithLimit(arr, value) {
+      arr.push(value);
+      if (arr.length > MAX_SAMPLES) arr.shift();
+    }
+
+    function pushAccelSample(which, ax, ay, az) {
+      pushWithLimit(accelData[which].ax, ax);
+      pushWithLimit(accelData[which].ay, ay);
+      pushWithLimit(accelData[which].az, az);
+    }
+
+    function pushGyroSample(which, gx, gy, gz) {
+      pushWithLimit(gyroData[which].gx, gx);
+      pushWithLimit(gyroData[which].gy, gy);
+      pushWithLimit(gyroData[which].gz, gz);
+    }
+
+    function pushMicSample(which, m) {
+      pushWithLimit(micData[which], m);
+    }
+
+    function drawSeries(ctx, data, color, min, max) {
+      if (data.length < 2) return;
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      const n = data.length;
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * (w - 4) + 2;
+        const v = data[i];
+        const t = (v - min) / (max - min || 1);
+        const y = (1 - t) * (h - 4) + 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function renderGraphs() {
+      // Resize canvas to CSS size (to keep resolution crisp)
+      [accelCanvas, gyroCanvas, micCanvas].forEach(canvas => {
+        const rect = canvas.getBoundingClientRect();
+        if (canvas.width !== rect.width || canvas.height !== rect.height) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+      });
+
+      // ACCEL
+      accelCtx.clearRect(0, 0, accelCanvas.width, accelCanvas.height);
+      accelCtx.fillStyle = "#020617";
+      accelCtx.fillRect(0, 0, accelCanvas.width, accelCanvas.height);
+
+      const axP = accelData.primary.ax;
+      const ayP = accelData.primary.ay;
+      const azP = accelData.primary.az;
+      const axS = accelData.secondary.ax;
+      const ayS = accelData.secondary.ay;
+      const azS = accelData.secondary.az;
+
+      const allAccel = axP.concat(ayP, azP, axS, ayS, azS);
+      let minA = -4, maxA = 4;
+      if (allAccel.length > 0) {
+        minA = Math.min(minA, ...allAccel);
+        maxA = Math.max(maxA, ...allAccel);
+      }
+
+      drawSeries(accelCtx, axP, "rgba(96,165,250,1)", minA, maxA);
+      drawSeries(accelCtx, ayP, "rgba(34,197,94,1)", minA, maxA);
+      drawSeries(accelCtx, azP, "rgba(190,242,100,1)", minA, maxA);
+
+      drawSeries(accelCtx, axS, "rgba(239,68,68,0.9)", minA, maxA);
+      drawSeries(accelCtx, ayS, "rgba(249,115,22,0.9)", minA, maxA);
+      drawSeries(accelCtx, azS, "rgba(251,191,36,0.9)", minA, maxA);
+
+      // GYRO
+      gyroCtx.clearRect(0, 0, gyroCanvas.width, gyroCanvas.height);
+      gyroCtx.fillStyle = "#020617";
+      gyroCtx.fillRect(0, 0, gyroCanvas.width, gyroCanvas.height);
+
+      const gxP = gyroData.primary.gx;
+      const gyP = gyroData.primary.gy;
+      const gzP = gyroData.primary.gz;
+      const gxS = gyroData.secondary.gx;
+      const gyS = gyroData.secondary.gy;
+      const gzS = gyroData.secondary.gz;
+      const allGyro = gxP.concat(gyP, gzP, gxS, gyS, gzS);
+      let minG = -500, maxG = 500;
+      if (allGyro.length > 0) {
+        minG = Math.min(minG, ...allGyro);
+        maxG = Math.max(maxG, ...allGyro);
+      }
+
+      drawSeries(gyroCtx, gxP, "rgba(96,165,250,1)", minG, maxG);
+      drawSeries(gyroCtx, gyP, "rgba(34,197,94,1)", minG, maxG);
+      drawSeries(gyroCtx, gzP, "rgba(190,242,100,1)", minG, maxG);
+
+      drawSeries(gyroCtx, gxS, "rgba(239,68,68,0.9)", minG, maxG);
+      drawSeries(gyroCtx, gyS, "rgba(249,115,22,0.9)", minG, maxG);
+      drawSeries(gyroCtx, gzS, "rgba(251,191,36,0.9)", minG, maxG);
+
+      // MIC
+      micCtx.clearRect(0, 0, micCanvas.width, micCanvas.height);
+      micCtx.fillStyle = "#020617";
+      micCtx.fillRect(0, 0, micCanvas.width, micCanvas.height);
+
+      const mP = micData.primary;
+      const mS = micData.secondary;
+      const allM = mP.concat(mS);
+      let minM = 0, maxM = 3000;
+      if (allM.length > 0) {
+        minM = Math.min(minM, ...allM);
+        maxM = Math.max(maxM, ...allM);
+      }
+
+      drawSeries(micCtx, mP, "rgba(56,189,248,1)", minM, maxM);
+      drawSeries(micCtx, mS, "rgba(248,113,113,0.95)", minM, maxM);
+
+      requestAnimationFrame(renderGraphs);
+    }
+
+    requestAnimationFrame(renderGraphs);
+
+    // ========= UI EVENTS =========
+
+    connectBtn.addEventListener("click", async () => {
+      if (!guiConnected) {
+        await connectToDevice();
+      } else {
+        await disconnectFromDevice();
+      }
+    });
+
+    prevListBtn.addEventListener("click", () => sendLine("CMD:PREV_LIST\n"));
+    nextListBtn.addEventListener("click", () => sendLine("CMD:NEXT_LIST\n"));
+    prevPatternBtn.addEventListener("click", () => sendLine("CMD:PREV_PATTERN\n"));
+    nextPatternBtn.addEventListener("click", () => sendLine("CMD:NEXT_PATTERN\n"));
+    favoriteBtn.addEventListener("click", () => sendLine("CMD:FAVORITE\n"));
+    sleepBtn.addEventListener("click", () => sendLine("CMD:GOTO_SLEEP\n"));
+    raveBtn.addEventListener("click", () => sendLine("CMD:RAVE_TIME\n"));
+    offBtn.addEventListener("click", () => sendLine("CMD:OFF\n"));
+
+    listCircles.forEach(circle => {
+      circle.addEventListener("click", () => {
+        const list = parseInt(circle.dataset.list, 10);
+        sendLine("SET:LIST:" + list + "\n");
+      });
+    });
+
+    function syncPatternFromUI() {
+      const val = Math.max(0, Math.min(99, parseInt(patternInput.value, 10) || 0));
+      patternInput.value = val;
+      patternSlider.value = val;
+      sendLine("SET:PATTERN:" + val + "\n");
+    }
+
+    patternInput.addEventListener("change", syncPatternFromUI);
+    patternSlider.addEventListener("input", () => {
+      patternInput.value = patternSlider.value;
+    });
+    patternSlider.addEventListener("change", syncPatternFromUI);
+
+    brightnessSlider.addEventListener("input", () => {
+      brightnessLabel.textContent = brightnessSlider.value;
+      sendLine("SET:BRIGHTNESS:" + brightnessSlider.value + "\n");
+    });
+
+    shuffleSlider.addEventListener("input", () => {
+      shuffleLabel.textContent = shuffleSlider.value;
+      sendLine("SET:SHUFFLE_T:" + shuffleSlider.value + "\n");
+    });
+
+    function toggleElement(el, cmd) {
+      const isOn = el.classList.contains("on");
+      // Just flip on the device; we do not try to mirror back from telemetry yet.
+      sendLine(cmd + "\n");
+      if (isOn) {
+        el.classList.remove("on");
+        el.classList.add("off");
+      } else {
+        el.classList.add("on");
+        el.classList.remove("off");
+      }
+    }
+
+    togglePowerlock.addEventListener("click", () => toggleElement(togglePowerlock, "TOGGLE:POWERLOCK"));
+    toggleSleeptimer.addEventListener("click", () => toggleElement(toggleSleeptimer, "TOGGLE:SLEEPTIMER"));
+    toggleShuffle.addEventListener("click", () => toggleElement(toggleShuffle, "TOGGLE:SHUFFLE_P"));
+
+    // Init toggles to match typical defaults from firmware comments:
+    // powerLock=false, sleepTimer=true, shuffle_P=false
+    togglePowerlock.classList.remove("on");
+    togglePowerlock.classList.add("off");
+    toggleSleeptimer.classList.add("on");
+    toggleSleeptimer.classList.remove("off");
+    toggleShuffle.classList.remove("on");
+    toggleShuffle.classList.add("off");
+  </script>
 </body>
 </html>
