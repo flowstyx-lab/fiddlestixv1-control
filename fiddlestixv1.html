@@ -1,47 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>FiddleStix V1 Control</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Chart.js via CDN -->
+  <meta charset="UTF-8" />
+  <title>FiddleStIX V1 Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Chart.js for graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111;
       color: #eee;
       margin: 0;
-      padding: 0;
+      padding: 1rem;
     }
-    header {
-      padding: 1rem 1.5rem;
-      background: #222;
+    h1, h2, h3 {
+      margin: 0.5rem 0;
+    }
+    .row {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
-    header h1 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-    main {
-      padding: 1rem 1.5rem 3rem;
-      max-width: 1100px;
-      margin: 0 auto;
+    .card {
+      background: #222;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      flex: 1 1 300px;
+      min-width: 280px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.5);
     }
     button {
       background: #444;
-      color: #fff;
+      color: #eee;
       border: none;
-      border-radius: 6px;
-      padding: 0.5rem 0.9rem;
-      margin: 0.25rem;
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      margin: 0.2rem;
       cursor: pointer;
       font-size: 0.9rem;
     }
@@ -49,604 +44,495 @@
       background: #666;
     }
     button:disabled {
-      opacity: 0.4;
+      background: #333;
+      color: #777;
       cursor: default;
     }
-    .btn-primary {
-      background: #1e88e5;
-    }
-    .btn-danger {
-      background: #c62828;
-    }
-    .section {
-      margin-bottom: 1.5rem;
-      padding: 1rem;
-      background: #181818;
-      border-radius: 8px;
-      border: 1px solid #333;
-    }
-    .section h2 {
-      margin-top: 0;
-      font-size: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #aaa;
-    }
-    .controls-row {
+    .slider-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
       align-items: center;
-    }
-    .status {
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-    .slider-group {
-      margin: 0.5rem 0;
-    }
-    .slider-group label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      margin-bottom: 0.25rem;
-    }
-    .slider-group input[type="range"] {
-      width: 100%;
-    }
-    .toggle-group {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      font-size: 0.85rem;
-    }
-    .toggle-group label {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      cursor: pointer;
-    }
-    .list-circles {
-      display: flex;
-      flex-wrap: wrap;
       gap: 0.5rem;
-      margin-top: 0.5rem;
+      margin: 0.3rem 0;
     }
-    .list-circle {
-      width: 28px;
-      height: 28px;
+    input[type="range"] {
+      flex: 1;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      border: 2px solid #eee;
+      display: inline-block;
+      margin-left: 0.3rem;
+    }
+    .dot-disconnected { background: #800; }
+    .dot-connected { background: #0a0; }
+    .list-colors {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-top: 0.3rem;
+    }
+    .list-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
       cursor: pointer;
-      box-sizing: border-box;
-      position: relative;
+      border: 2px solid transparent;
     }
-    .list-circle[data-active="true"]::after {
-      content: "";
-      position: absolute;
-      inset: 4px;
-      border-radius: 50%;
-      border: 2px solid #fff;
+    .list-color.active {
+      border-color: #fff;
     }
-    canvas {
-      background: #000;
-      border-radius: 6px;
-    }
-    .charts-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1rem;
-    }
-    @media (min-width: 900px) {
-      .charts-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      }
-      .charts-grid > div:last-child {
-        grid-column: 1 / -1;
-      }
+    .small-label {
+      font-size: 0.8rem;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
-<header>
-  <h1>FiddleStix V1 Control</h1>
-  <div>
-    <button id="connectBtn" class="btn-primary">Connect</button>
-    <span id="connStatus" class="status">Not connected</span>
+  <h1>FiddleStIX V1 Control</h1>
+
+  <div class="row">
+    <div class="card">
+      <h2>Connections</h2>
+      <p>
+        <button id="connectPrimaryBtn">Connect Primary</button>
+        <span class="small-label">
+          Primary
+          <span id="primaryStatusDot" class="status-dot dot-disconnected"></span>
+        </span>
+      </p>
+      <p>
+        <button id="connectSecondaryBtn">Connect Secondary</button>
+        <span class="small-label">
+          Secondary
+          <span id="secondaryStatusDot" class="status-dot dot-disconnected"></span>
+        </span>
+      </p>
+      <p class="small-label">
+        Note: Both sticks advertise as "FiddleStIX_V1". Use the dialog to pick
+        which you want to treat as Primary vs Secondary.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Pattern & List Controls (Primary)</h2>
+      <div>
+        <button id="prevPageBtn">Previous Page</button>
+        <button id="nextPageBtn">Next Page</button>
+      </div>
+      <div>
+        <button id="prevPatternBtn">Previous Pattern</button>
+        <button id="nextPatternBtn">Next Pattern</button>
+      </div>
+      <div>
+        <button id="favoriteBtn">Favorite</button>
+        <button id="sleepBtn">Go To Sleep</button>
+        <button id="raveBtn">Rave O’Clock</button>
+      </div>
+
+      <h3>Current State (Primary)</h3>
+      <p>
+        List:
+        <span id="listDisplay">-</span>
+        &nbsp;|&nbsp;
+        Pattern:
+        <span id="patternDisplay">-</span>
+      </p>
+
+      <h3>List Selection</h3>
+      <div class="list-colors" id="listColorBar">
+        <!-- Filled by JS -->
+      </div>
+
+      <h3>Pattern Index</h3>
+      <div class="slider-row">
+        <span class="small-label">1</span>
+        <input id="patternSlider" type="range" min="1" max="10" value="1" />
+        <span class="small-label">10</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Parameters & Toggles (Primary)</h2>
+
+      <h3>Brightness</h3>
+      <div class="slider-row">
+        <span class="small-label">0</span>
+        <input id="brightnessSlider" type="range" min="0" max="255" value="180" />
+        <span class="small-label">255</span>
+      </div>
+
+      <h3>Shuffle Dwell (ms)</h3>
+      <div class="slider-row">
+        <span class="small-label">500</span>
+        <input id="shuffleSlider" type="range" min="500" max="10000" step="100" value="5000" />
+        <span class="small-label">10000</span>
+      </div>
+
+      <h3>Toggles</h3>
+      <div>
+        <button id="powerLockBtn">Toggle PowerLock</button>
+        <button id="sleepTimerBtn">Toggle SleepTimer</button>
+        <button id="shufflePBtn">Toggle Shuffle_P</button>
+      </div>
+    </div>
   </div>
-</header>
 
-<main>
-  <!-- State & Role -->
-  <section class="section">
-    <h2>Device & Role</h2>
-    <div class="controls-row">
-      <span class="status">Connected device: <span id="deviceName">—</span></span>
+  <div class="row" style="margin-top:1rem;">
+    <div class="card">
+      <h2>Accelerometer (last 30s)</h2>
+      <canvas id="accelChart" height="200"></canvas>
     </div>
-    <div class="controls-row">
-      <label style="font-size:0.85rem; display:flex; align-items:center; gap:0.5rem;">
-        <input type="checkbox" id="rolePrimaryToggle">
-        This device is <strong>Primary</strong>
-      </label>
-      <span class="status" id="roleStatus">Role: unknown</span>
+    <div class="card">
+      <h2>Gyroscope (last 30s)</h2>
+      <canvas id="gyroChart" height="200"></canvas>
     </div>
-    <div class="controls-row">
-      <span class="status">
-        Current List: <span id="currentListLabel">—</span> (index <span id="currentListIndex">—</span>),
-        Pattern: <span id="currentPatternIndex">—</span>
-      </span>
+    <div class="card">
+      <h2>Mic Level (last 30s)</h2>
+      <canvas id="micChart" height="200"></canvas>
     </div>
-  </section>
+  </div>
 
-  <!-- Pattern & list controls -->
-  <section class="section">
-    <h2>Pattern Controls</h2>
-    <div class="controls-row">
-      <button id="prevPageBtn">Previous Page</button>
-      <button id="nextPageBtn">Next Page</button>
-      <button id="prevPatternBtn">Previous Pattern</button>
-      <button id="nextPatternBtn">Next Pattern</button>
-      <button id="favoriteBtn">Favorite</button>
-      <button id="sleepBtn">Go To Sleep</button>
-      <button id="raveBtn" class="btn-danger">Rave O’Clock</button>
-    </div>
+  <script>
+    // Nordic UART UUIDs
+    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // client -> device
+    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // device -> client
 
-    <div class="slider-group">
-      <label>
-        Pattern Index (1–100)
-        <span id="patternSliderValue">1</span>
-      </label>
-      <input type="range" id="patternSlider" min="1" max="100" value="1">
-    </div>
+    // Primary & secondary BLE handles
+    let primary = {
+      device: null,
+      server: null,
+      service: null,
+      txChar: null,
+      rxChar: null
+    };
 
-    <div class="list-circles" id="listCirclesContainer">
-      <!-- Filled by JS -->
-    </div>
-  </section>
+    let secondary = {
+      device: null,
+      server: null,
+      service: null,
+      txChar: null,
+      rxChar: null
+    };
 
-  <!-- Parameters -->
-  <section class="section">
-    <h2>Parameters</h2>
-    <div class="slider-group">
-      <label>
-        Global Brightness (0–255)
-        <span id="brightnessValue">200</span>
-      </label>
-      <input type="range" id="brightnessSlider" min="0" max="255" value="200">
-    </div>
+    const primaryStatusDot = document.getElementById("primaryStatusDot");
+    const secondaryStatusDot = document.getElementById("secondaryStatusDot");
 
-    <div class="slider-group">
-      <label>
-        Shuffle Dwell Time (ms)
-        <span id="shuffleTValue">10000</span>
-      </label>
-      <input type="range" id="shuffleTSlider" min="100" max="60000" value="10000">
-    </div>
+    function setStatusDot(dot, connected) {
+      dot.classList.remove("dot-connected", "dot-disconnected");
+      dot.classList.add(connected ? "dot-connected" : "dot-disconnected");
+    }
 
-    <div class="toggle-group">
-      <label><input type="checkbox" id="powerLockToggle"> Power Lock</label>
-      <label><input type="checkbox" id="sleepTimerToggle" checked> Sleep Timer</label>
-      <label><input type="checkbox" id="shufflePToggle"> Shuffle Patterns</label>
-    </div>
-  </section>
+    //------------------------------------------------------------------
+    // Connect helpers
+    //------------------------------------------------------------------
+    async function connectStick(target) {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [UART_SERVICE_UUID] }]
+        });
 
-  <!-- Charts -->
-  <section class="section">
-    <h2>Sensor Telemetry (30s window)</h2>
-    <div class="charts-grid">
-      <div>
-        <p class="status">Gyroscope (Primary: blue, Secondary: red)</p>
-        <canvas id="gyroChart" height="200"></canvas>
-      </div>
-      <div>
-        <p class="status">Accelerometer (Primary: blue, Secondary: red)</p>
-        <canvas id="accelChart" height="200"></canvas>
-      </div>
-      <div>
-        <p class="status">Microphone (Primary: blue, Secondary: red)</p>
-        <canvas id="micChart" height="200"></canvas>
-      </div>
-    </div>
-  </section>
-</main>
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(UART_SERVICE_UUID);
+        const txChar = await service.getCharacteristic(UART_TX_UUID);
+        const rxChar = await service.getCharacteristic(UART_RX_UUID);
+        await rxChar.startNotifications();
 
-<script>
-  // UART service UUID (Nordic / Adafruit BLE UART)
-  const UART_SERVICE_UUID      = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const UART_TX_CHAR_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
-  const UART_RX_CHAR_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+        rxChar.addEventListener("characteristicvaluechanged", (event) => {
+          const data = new TextDecoder().decode(event.target.value);
+          handleIncomingData(target, data);
+        });
 
-  let bluetoothDevice = null;
-  let uartService = null;
-  let txChar = null; // notify (device -> browser)
-  let rxChar = null; // write (browser -> device)
-  let connected = false;
+        target.device = device;
+        target.server = server;
+        target.service = service;
+        target.txChar = txChar;
+        target.rxChar = rxChar;
 
-  const connectBtn = document.getElementById('connectBtn');
-  const connStatus = document.getElementById('connStatus');
-  const deviceNameSpan = document.getElementById('deviceName');
+        device.addEventListener("gattserverdisconnected", () => {
+          target.device = null;
+          target.server = null;
+          target.service = null;
+          target.txChar = null;
+          target.rxChar = null;
+          if (target === primary) setStatusDot(primaryStatusDot, false);
+          else setStatusDot(secondaryStatusDot, false);
+        });
 
-  const rolePrimaryToggle = document.getElementById('rolePrimaryToggle');
-  const roleStatus = document.getElementById('roleStatus');
+        if (target === primary) setStatusDot(primaryStatusDot, true);
+        else setStatusDot(secondaryStatusDot, true);
+      } catch (err) {
+        console.error("BLE connect error:", err);
+        alert("Connection failed: " + err.message);
+      }
+    }
 
-  const currentListLabel = document.getElementById('currentListLabel');
-  const currentListIndex = document.getElementById('currentListIndex');
-  const currentPatternIndex = document.getElementById('currentPatternIndex');
-
-  const prevPageBtn = document.getElementById('prevPageBtn');
-  const nextPageBtn = document.getElementById('nextPageBtn');
-  const prevPatternBtn = document.getElementById('prevPatternBtn');
-  const nextPatternBtn = document.getElementById('nextPatternBtn');
-  const favoriteBtn = document.getElementById('favoriteBtn');
-  const sleepBtn = document.getElementById('sleepBtn');
-  const raveBtn = document.getElementById('raveBtn');
-
-  const patternSlider = document.getElementById('patternSlider');
-  const patternSliderValue = document.getElementById('patternSliderValue');
-
-  const brightnessSlider = document.getElementById('brightnessSlider');
-  const brightnessValue = document.getElementById('brightnessValue');
-
-  const shuffleTSlider = document.getElementById('shuffleTSlider');
-  const shuffleTValue = document.getElementById('shuffleTValue');
-
-  const powerLockToggle = document.getElementById('powerLockToggle');
-  const sleepTimerToggle = document.getElementById('sleepTimerToggle');
-  const shufflePToggle = document.getElementById('shufflePToggle');
-
-  const listCirclesContainer = document.getElementById('listCirclesContainer');
-
-  let currentListNum = 0;    // 0-based internal
-  let currentPatternNum = 0; // 0-based internal
-
-  // Map list index to label + color
-  const listMeta = [
-    { name: 'White',  color: '#ffffff' },
-    { name: 'Red',    color: '#ff0000' },
-    { name: 'Orange', color: '#ff7f00' },
-    { name: 'Yellow', color: '#ffff00' },
-    { name: 'Green',  color: '#00ff00' },
-    { name: 'Blue',   color: '#0000ff' },
-    { name: 'Indigo', color: '#4b0082' },
-    { name: 'Violet', color: '#8b00ff' },
-    { name: 'Black',  color: '#000000' },
-  ];
-
-  // Build list circles UI
-  function buildListCircles() {
-    listCirclesContainer.innerHTML = '';
-    listMeta.forEach((meta, idx) => {
-      const div = document.createElement('div');
-      div.className = 'list-circle';
-      div.style.background = meta.color;
-      div.dataset.index = idx;
-      div.title = `${idx}: ${meta.name}`;
-      div.addEventListener('click', () => {
-        sendCommand(`SET:LIST:${idx}`);
-      });
-      listCirclesContainer.appendChild(div);
-    });
-    updateListCirclesActive();
-  }
-
-  function updateListCirclesActive() {
-    const circles = listCirclesContainer.querySelectorAll('.list-circle');
-    circles.forEach(c => {
-      c.dataset.active = (parseInt(c.dataset.index) === currentListNum).toString();
+    document.getElementById("connectPrimaryBtn").addEventListener("click", () => {
+      connectStick(primary);
     });
 
-    currentListIndex.textContent = currentListNum;
-    currentListLabel.textContent = listMeta[currentListNum]?.name ?? '—';
-    currentPatternIndex.textContent = currentPatternNum + 1;
-  }
+    document.getElementById("connectSecondaryBtn").addEventListener("click", () => {
+      connectStick(secondary);
+    });
 
-  buildListCircles();
-
-  // Chart buffers (30s window @ 20Hz -> 600 pts)
-  const WINDOW_SAMPLES = 600;
-  let gyroPrimaryData = { x: [], y: [], z: [] };
-  let gyroSecondaryData = { x: [], y: [], z: [] };
-
-  let accelPrimaryData = { x: [], y: [], z: [] };
-  let accelSecondaryData = { x: [], y: [], z: [] };
-
-  let micPrimaryData = [];
-  let micSecondaryData = [];
-
-  function initArrays(arr, length, fill=0) {
-    arr.length = 0;
-    for (let i = 0; i < length; i++) arr.push(fill);
-  }
-
-  function initTelemetryBuffers() {
-    initArrays(gyroPrimaryData.x, WINDOW_SAMPLES, 0);
-    initArrays(gyroPrimaryData.y, WINDOW_SAMPLES, 0);
-    initArrays(gyroPrimaryData.z, WINDOW_SAMPLES, 0);
-
-    initArrays(gyroSecondaryData.x, WINDOW_SAMPLES, 0);
-    initArrays(gyroSecondaryData.y, WINDOW_SAMPLES, 0);
-    initArrays(gyroSecondaryData.z, WINDOW_SAMPLES, 0);
-
-    initArrays(accelPrimaryData.x, WINDOW_SAMPLES, 0);
-    initArrays(accelPrimaryData.y, WINDOW_SAMPLES, 0);
-    initArrays(accelPrimaryData.z, WINDOW_SAMPLES, 0);
-
-    initArrays(accelSecondaryData.x, WINDOW_SAMPLES, 0);
-    initArrays(accelSecondaryData.y, WINDOW_SAMPLES, 0);
-    initArrays(accelSecondaryData.z, WINDOW_SAMPLES, 0);
-
-    initArrays(micPrimaryData, WINDOW_SAMPLES, 0);
-    initArrays(micSecondaryData, WINDOW_SAMPLES, 0);
-  }
-
-  initTelemetryBuffers();
-
-  const labels = Array.from({ length: WINDOW_SAMPLES }, (_, i) => -((WINDOW_SAMPLES - 1 - i) * 0.05)); // seconds lookback
-
-  const gyroCtx = document.getElementById('gyroChart').getContext('2d');
-  const accelCtx = document.getElementById('accelChart').getContext('2d');
-  const micCtx = document.getElementById('micChart').getContext('2d');
-
-  const gyroChart = new Chart(gyroCtx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Primary | gx', data: gyroPrimaryData.x, borderColor: '#42a5f5', borderWidth: 1, pointRadius: 0 },
-        { label: 'Primary | gy', data: gyroPrimaryData.y, borderColor: '#1e88e5', borderWidth: 1, pointRadius: 0 },
-        { label: 'Primary | gz', data: gyroPrimaryData.z, borderColor: '#0d47a1', borderWidth: 1, pointRadius: 0 },
-        { label: 'Secondary | gx', data: gyroSecondaryData.x, borderColor: '#ef5350', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-        { label: 'Secondary | gy', data: gyroSecondaryData.y, borderColor: '#e53935', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-        { label: 'Secondary | gz', data: gyroSecondaryData.z, borderColor: '#b71c1c', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { display: false },
-        y: { display: true, ticks: { color: '#aaa' }, grid: { color: '#333' } }
+    //------------------------------------------------------------------
+    // Sending commands (to PRIMARY only for now)
+    //------------------------------------------------------------------
+    async function sendToPrimary(line) {
+      if (!primary.txChar) {
+        alert("Primary not connected.");
+        return;
+      }
+      const data = new TextEncoder().encode(line + "\n");
+      try {
+        await primary.txChar.writeValue(data);
+      } catch (err) {
+        console.error("Write error:", err);
       }
     }
-  });
 
-  const accelChart = new Chart(accelCtx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Primary | ax', data: accelPrimaryData.x, borderColor: '#42a5f5', borderWidth: 1, pointRadius: 0 },
-        { label: 'Primary | ay', data: accelPrimaryData.y, borderColor: '#1e88e5', borderWidth: 1, pointRadius: 0 },
-        { label: 'Primary | az', data: accelPrimaryData.z, borderColor: '#0d47a1', borderWidth: 1, pointRadius: 0 },
-        { label: 'Secondary | ax', data: accelSecondaryData.x, borderColor: '#ef5350', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-        { label: 'Secondary | ay', data: accelSecondaryData.y, borderColor: '#e53935', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-        { label: 'Secondary | az', data: accelSecondaryData.z, borderColor: '#b71c1c', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { display: false },
-        y: { display: true, ticks: { color: '#aaa' }, grid: { color: '#333' } }
-      }
-    }
-  });
+    // Buttons
+    document.getElementById("nextPageBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:NEXT_LIST");
+    });
+    document.getElementById("prevPageBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:PREV_LIST");
+    });
+    document.getElementById("nextPatternBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:NEXT_PATTERN");
+    });
+    document.getElementById("prevPatternBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:PREV_PATTERN");
+    });
+    document.getElementById("favoriteBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:FAVORITE");
+    });
+    document.getElementById("sleepBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:GOTO_SLEEP");
+    });
+    document.getElementById("raveBtn").addEventListener("click", () => {
+      sendToPrimary("CMD:RAVE_TIME");
+    });
 
-  const micChart = new Chart(micCtx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Primary', data: micPrimaryData, borderColor: '#42a5f5', borderWidth: 1, pointRadius: 0 },
-        { label: 'Secondary', data: micSecondaryData, borderColor: '#ef5350', borderWidth: 1, borderDash: [4,2], pointRadius: 0 },
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { display: false },
-        y: { display: true, ticks: { color: '#aaa' }, grid: { color: '#333' } }
-      }
-    }
-  });
+    // Sliders
+    document.getElementById("brightnessSlider").addEventListener("input", (e) => {
+      const val = parseInt(e.target.value, 10) || 0;
+      sendToPrimary("SET:BRIGHTNESS:" + val);
+    });
 
-  function shiftPush(arr, v) {
-    arr.shift();
-    arr.push(v);
-  }
+    document.getElementById("shuffleSlider").addEventListener("input", (e) => {
+      const val = parseInt(e.target.value, 10) || 500;
+      sendToPrimary("SET:SHUFFLE_T:" + val);
+    });
 
-  function updateCharts() {
-    gyroChart.update('none');
-    accelChart.update('none');
-    micChart.update('none');
-  }
+    // Toggles
+    document.getElementById("powerLockBtn").addEventListener("click", () => {
+      sendToPrimary("TOGGLE:POWERLOCK");
+    });
+    document.getElementById("sleepTimerBtn").addEventListener("click", () => {
+      sendToPrimary("TOGGLE:SLEEPTIMER");
+    });
+    document.getElementById("shufflePBtn").addEventListener("click", () => {
+      sendToPrimary("TOGGLE:SHUFFLE_P");
+    });
 
-  // Bluetooth helpers ---------------------------------------------------------
+    //------------------------------------------------------------------
+    // List color selector
+    //------------------------------------------------------------------
+    const listNames = [
+      "WHITE", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET", "BLACK"
+    ];
 
-  async function connect() {
-    try {
-      bluetoothDevice = await navigator.bluetooth.requestDevice({
-        filters: [
-          { namePrefix: 'FiddleStIX' }
-        ],
-        optionalServices: [UART_SERVICE_UUID]
+    const listColorsCSS = [
+      "#ffffff", // white
+      "#ff0000", // red
+      "#ff7f00", // orange
+      "#ffff00", // yellow
+      "#00ff00", // green
+      "#0000ff", // blue
+      "#4b0082", // indigo
+      "#8b00ff", // violet
+      "#000000"  // black
+    ];
+
+    const listColorBar = document.getElementById("listColorBar");
+    const listDisplay = document.getElementById("listDisplay");
+    const patternDisplay = document.getElementById("patternDisplay");
+    const patternSlider = document.getElementById("patternSlider");
+
+    let currentListIndex = null;
+
+    listNames.forEach((name, idx) => {
+      const div = document.createElement("div");
+      div.className = "list-color";
+      div.style.backgroundColor = listColorsCSS[idx];
+      div.title = name;
+      div.addEventListener("click", () => {
+        sendToPrimary("SET:LIST:" + idx);
       });
+      div.dataset.listIndex = idx;
+      listColorBar.appendChild(div);
+    });
 
-      bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    patternSlider.addEventListener("input", (e) => {
+      const val1Based = parseInt(e.target.value, 10) || 1;
+      const zeroBased = val1Based - 1;
+      sendToPrimary("SET:PATTERN:" + zeroBased);
+    });
 
-      const server = await bluetoothDevice.gatt.connect();
-      uartService = await server.getPrimaryService(UART_SERVICE_UUID);
-
-      txChar = await uartService.getCharacteristic(UART_TX_CHAR_UUID);
-      rxChar = await uartService.getCharacteristic(UART_RX_CHAR_UUID);
-
-      await txChar.startNotifications();
-      txChar.addEventListener('characteristicvaluechanged', handleNotifications);
-
-      connected = true;
-      connectBtn.textContent = 'Disconnect';
-      connStatus.textContent = 'Connected';
-      deviceNameSpan.textContent = bluetoothDevice.name || 'Unknown';
-    } catch (error) {
-      console.error(error);
-      connStatus.textContent = 'Connection failed';
+    function highlightList(idx) {
+      currentListIndex = idx;
+      listDisplay.textContent = idx != null ? `${listNames[idx]} (${idx+1})` : "-";
+      Array.from(listColorBar.children).forEach((el) => {
+        el.classList.toggle("active", parseInt(el.dataset.listIndex, 10) === idx);
+      });
     }
-  }
 
-  async function disconnect() {
-    connected = false;
-    if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-      bluetoothDevice.gatt.disconnect();
+    //------------------------------------------------------------------
+    // Charts setup (accel, gyro, mic) — primary (blue) + secondary (red)
+    //------------------------------------------------------------------
+    const accelCtx = document.getElementById("accelChart").getContext("2d");
+    const gyroCtx  = document.getElementById("gyroChart").getContext("2d");
+    const micCtx   = document.getElementById("micChart").getContext("2d");
+
+    const accelDataPrimary = [];
+    const accelDataSecondary = [];
+    const gyroDataPrimary = [];
+    const gyroDataSecondary = [];
+    const micDataPrimary = [];
+    const micDataSecondary = [];
+
+    const MAX_WINDOW_SEC = 30;
+
+    function makeLineChart(ctx, label) {
+      return new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: label + " (Primary)",
+              data: [],
+              borderWidth: 1,
+              pointRadius: 0
+            },
+            {
+              label: label + " (Secondary)",
+              data: [],
+              borderWidth: 1,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          scales: {
+            x: {
+              type: "linear",
+              title: { display: true, text: "Time (s)" },
+              ticks: { color: "#aaa" },
+              grid: { color: "#333" }
+            },
+            y: {
+              title: { display: true, text: label },
+              ticks: { color: "#aaa" },
+              grid: { color: "#333" }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: "#eee" }
+            }
+          }
+        }
+      });
     }
-    connectBtn.textContent = 'Connect';
-    connStatus.textContent = 'Not connected';
-    deviceNameSpan.textContent = '—';
-  }
 
-  function onDisconnected() {
-    connected = false;
-    connectBtn.textContent = 'Connect';
-    connStatus.textContent = 'Disconnected';
-    deviceNameSpan.textContent = '—';
-  }
+    const accelChart = makeLineChart(accelCtx, "Accel |a|");
+    const gyroChart  = makeLineChart(gyroCtx, "Gyro |ω|");
+    const micChart   = makeLineChart(micCtx, "Mic level");
 
-  function sendLine(str) {
-    if (!connected || !rxChar) return;
-    const enc = new TextEncoder();
-    const data = enc.encode(str);
-    rxChar.writeValue(data);
-  }
+    function pushData(seriesPrimary, seriesSecondary, isPrimary, tSec, value) {
+      const arr = isPrimary ? seriesPrimary : seriesSecondary;
+      arr.push({ x: tSec, y: value });
 
-  function sendCommand(cmd) {
-    // High-level wrapper that appends \n
-    if (!cmd.endsWith('\n')) cmd += '\n';
-    sendLine(cmd);
-  }
-
-  // Handle incoming UART lines
-  let rxBuffer = '';
-
-  function handleNotifications(event) {
-    const value = event.target.value;
-    const dec = new TextDecoder();
-    rxBuffer += dec.decode(value);
-
-    let newlineIndex;
-    while ((newlineIndex = rxBuffer.indexOf('\n')) >= 0) {
-      const line = rxBuffer.slice(0, newlineIndex).trim();
-      rxBuffer = rxBuffer.slice(newlineIndex + 1);
-      if (line.length > 0) handleUartLine(line);
+      const cutoff = tSec - MAX_WINDOW_SEC;
+      while (arr.length && arr[0].x < cutoff) {
+        arr.shift();
+      }
     }
-  }
 
-  function handleUartLine(line) {
-    // console.log('RX:', line);
-    if (line.startsWith('SAMP,')) {
-      parseSamp(line);
+    function updateCharts() {
+      accelChart.data.datasets[0].data = accelDataPrimary;
+      accelChart.data.datasets[1].data = accelDataSecondary;
+      accelChart.update("none");
+
+      gyroChart.data.datasets[0].data = gyroDataPrimary;
+      gyroChart.data.datasets[1].data = gyroDataSecondary;
+      gyroChart.update("none");
+
+      micChart.data.datasets[0].data = micDataPrimary;
+      micChart.data.datasets[1].data = micDataSecondary;
+      micChart.update("none");
     }
-    // Future: handle more lines if needed
-  }
 
-  // Parse SAMP telemetry from Primary
-  function parseSamp(line) {
-    // SAMP,<millis>,<role>,<listNum>,<patternNum>,<ax>,<ay>,<az>,<gx>,<gy>,<gz>,<mic>
-    const parts = line.split(',');
-    if (parts.length < 12) return;
+    //------------------------------------------------------------------
+    // Incoming data handling
+    //------------------------------------------------------------------
+    let t0 = null;
 
-    const millisVal = parseInt(parts[1]);
-    const role = parseInt(parts[2]); // 0 primary, 1 secondary (for future)
-    const listNum = parseInt(parts[3]);
-    const patternNum = parseInt(parts[4]);
+    function handleIncomingData(target, chunk) {
+      const isPrimary = (target === primary);
 
-    const ax = parseFloat(parts[5]);
-    const ay = parseFloat(parts[6]);
-    const az = parseFloat(parts[7]);
-    const gx = parseFloat(parts[8]);
-    const gy = parseFloat(parts[9]);
-    const gz = parseFloat(parts[10]);
-    const mic = parseInt(parts[11]);
-
-    // Update UI for list & pattern
-    currentListNum = listNum;
-    currentPatternNum = patternNum;
-    patternSlider.value = patternNum + 1;
-    patternSliderValue.textContent = patternNum + 1;
-    updateListCirclesActive();
-
-    // Update buffers (primary)
-    shiftPush(accelPrimaryData.x, ax);
-    shiftPush(accelPrimaryData.y, ay);
-    shiftPush(accelPrimaryData.z, az);
-
-    shiftPush(gyroPrimaryData.x, gx);
-    shiftPush(gyroPrimaryData.y, gy);
-    shiftPush(gyroPrimaryData.z, gz);
-
-    shiftPush(micPrimaryData, mic);
-
-    // Secondary traces left flat for now
-    updateCharts();
-  }
-
-  // UI event wiring -----------------------------------------------------------
-
-  connectBtn.addEventListener('click', () => {
-    if (connected) disconnect();
-    else connect();
-  });
-
-  prevPageBtn.addEventListener('click', () => sendCommand('CMD:PREV_LIST'));
-  nextPageBtn.addEventListener('click', () => sendCommand('CMD:NEXT_LIST'));
-  prevPatternBtn.addEventListener('click', () => sendCommand('CMD:PREV_PATTERN'));
-  nextPatternBtn.addEventListener('click', () => sendCommand('CMD:NEXT_PATTERN'));
-  favoriteBtn.addEventListener('click', () => sendCommand('CMD:FAVORITE'));
-  sleepBtn.addEventListener('click', () => sendCommand('CMD:GOTO_SLEEP'));
-  raveBtn.addEventListener('click', () => sendCommand('CMD:RAVE_TIME'));
-
-  patternSlider.addEventListener('input', () => {
-    const val = parseInt(patternSlider.value);
-    patternSliderValue.textContent = val;
-    const idx = val - 1; // 0-based
-    sendCommand(`SET:PATTERN:${idx}`);
-  });
-
-  brightnessSlider.addEventListener('input', () => {
-    const val = parseInt(brightnessSlider.value);
-    brightnessValue.textContent = val;
-    sendCommand(`SET:BRIGHTNESS:${val}`);
-  });
-
-  shuffleTSlider.addEventListener('input', () => {
-    const val = parseInt(shuffleTSlider.value);
-    shuffleTValue.textContent = val;
-    sendCommand(`SET:SHUFFLE_T:${val}`);
-  });
-
-  powerLockToggle.addEventListener('change', () => {
-    sendCommand('TOGGLE:POWERLOCK');
-  });
-  sleepTimerToggle.addEventListener('change', () => {
-    sendCommand('TOGGLE:SLEEPTIMER');
-  });
-  shufflePToggle.addEventListener('change', () => {
-    sendCommand('TOGGLE:SHUFFLE_P');
-  });
-
-  rolePrimaryToggle.addEventListener('change', () => {
-    if (rolePrimaryToggle.checked) {
-      roleStatus.textContent = 'Role: PRIMARY';
-      sendCommand('SET:ROLE:PRIMARY');
-    } else {
-      roleStatus.textContent = 'Role: SECONDARY';
-      sendCommand('SET:ROLE:SECONDARY');
+      // BLE UART chunks may not align to lines; split and process each line
+      const lines = chunk.split("\n");
+      for (const lineRaw of lines) {
+        const line = lineRaw.trim();
+        if (!line) continue;
+        if (line.startsWith("SAMP,")) {
+          handleSampLine(isPrimary, line);
+        }
+      }
     }
-  });
-</script>
 
+    function handleSampLine(isPrimary, line) {
+      // Format:
+      // SAMP,<millis>,<role>,<listNum>,<patternNum>,ax,ay,az,gx,gy,gz,micLevel
+      const parts = line.split(",");
+      if (parts.length < 12) return;
+
+      const ms       = parseInt(parts[1], 10) || 0;
+      const listNum  = parseInt(parts[3], 10) || 0;
+      const pattern  = parseInt(parts[4], 10) || 0;
+      const ax = parseFloat(parts[5]);
+      const ay = parseFloat(parts[6]);
+      const az = parseFloat(parts[7]);
+      const gx = parseFloat(parts[8]);
+      const gy = parseFloat(parts[9]);
+      const gz = parseFloat(parts[10]);
+      const mic = parseFloat(parts[11]);
+
+      if (isPrimary) {
+        // Update displayed list/pattern (GUI uses 1-based)
+        highlightList(listNum);
+        patternDisplay.textContent = (pattern + 1).toString();
+        patternSlider.value = (pattern + 1);
+      }
+
+      if (t0 === null) t0 = ms;
+      const tSec = (ms - t0) / 1000;
+
+      const accelMag = Math.sqrt(ax*ax + ay*ay + az*az);
+      const gyroMag  = Math.sqrt(gx*gx + gy*gy + gz*gz);
+
+      pushData(accelDataPrimary, accelDataSecondary, isPrimary, tSec, accelMag);
+      pushData(gyroDataPrimary, gyroDataSecondary, isPrimary, tSec, gyroMag);
+      pushData(micDataPrimary,   micDataSecondary, isPrimary, tSec, mic);
+
+      updateCharts();
+    }
+
+  </script>
 </body>
 </html>
