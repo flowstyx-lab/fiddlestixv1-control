@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>FiddleStIX V1 Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Chart.js for graphs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -109,13 +108,14 @@
         </span>
       </p>
       <p class="small-label">
-        Note: Both sticks advertise as "FiddleStIX_V1". Use the dialog to pick
-        which you want to treat as Primary vs Secondary.
+        Both sticks advertise as "FiddleStIX_V1". Use the dialog to pick
+        which you treat as Primary vs Secondary. All control commands are
+        broadcast to both devices so they stay in sync.
       </p>
     </div>
 
     <div class="card">
-      <h2>Pattern & List Controls (Primary)</h2>
+      <h2>Pattern & List Controls (Broadcast)</h2>
       <div>
         <button id="prevPageBtn">Previous Page</button>
         <button id="nextPageBtn">Next Page</button>
@@ -153,7 +153,7 @@
     </div>
 
     <div class="card">
-      <h2>Parameters & Toggles (Primary)</h2>
+      <h2>Parameters & Toggles (Broadcast)</h2>
 
       <h3>Brightness</h3>
       <div class="slider-row">
@@ -164,8 +164,8 @@
 
       <h3>Shuffle Dwell (ms)</h3>
       <div class="slider-row">
-        <span class="small-label">500</span>
-        <input id="shuffleSlider" type="range" min="500" max="10000" step="100" value="5000" />
+        <span class="small-label">100</span>
+        <input id="shuffleSlider" type="range" min="100" max="10000" step="100" value="5000" />
         <span class="small-label">10000</span>
       </div>
 
@@ -194,27 +194,12 @@
   </div>
 
   <script>
-    // Nordic UART UUIDs
     const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // client -> device
-    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // device -> client
+    const UART_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
-    // Primary & secondary BLE handles
-    let primary = {
-      device: null,
-      server: null,
-      service: null,
-      txChar: null,
-      rxChar: null
-    };
-
-    let secondary = {
-      device: null,
-      server: null,
-      service: null,
-      txChar: null,
-      rxChar: null
-    };
+    let primary = { device:null, server:null, service:null, txChar:null, rxChar:null };
+    let secondary = { device:null, server:null, service:null, txChar:null, rxChar:null };
 
     const primaryStatusDot = document.getElementById("primaryStatusDot");
     const secondaryStatusDot = document.getElementById("secondaryStatusDot");
@@ -224,10 +209,7 @@
       dot.classList.add(connected ? "dot-connected" : "dot-disconnected");
     }
 
-    //------------------------------------------------------------------
-    // Connect helpers
-    //------------------------------------------------------------------
-    async function connectStick(target) {
+    async function connectStick(target, isPrimary) {
       try {
         const device = await navigator.bluetooth.requestDevice({
           filters: [{ services: [UART_SERVICE_UUID] }]
@@ -244,24 +226,22 @@
           handleIncomingData(target, data);
         });
 
-        target.device = device;
-        target.server = server;
+        target.device  = device;
+        target.server  = server;
         target.service = service;
-        target.txChar = txChar;
-        target.rxChar = rxChar;
+        target.txChar  = txChar;
+        target.rxChar  = rxChar;
 
         device.addEventListener("gattserverdisconnected", () => {
-          target.device = null;
-          target.server = null;
+          target.device  = null;
+          target.server  = null;
           target.service = null;
-          target.txChar = null;
-          target.rxChar = null;
-          if (target === primary) setStatusDot(primaryStatusDot, false);
-          else setStatusDot(secondaryStatusDot, false);
+          target.txChar  = null;
+          target.rxChar  = null;
+          setStatusDot(isPrimary ? primaryStatusDot : secondaryStatusDot, false);
         });
 
-        if (target === primary) setStatusDot(primaryStatusDot, true);
-        else setStatusDot(secondaryStatusDot, true);
+        setStatusDot(isPrimary ? primaryStatusDot : secondaryStatusDot, true);
       } catch (err) {
         console.error("BLE connect error:", err);
         alert("Connection failed: " + err.message);
@@ -269,91 +249,82 @@
     }
 
     document.getElementById("connectPrimaryBtn").addEventListener("click", () => {
-      connectStick(primary);
+      connectStick(primary, true);
     });
-
     document.getElementById("connectSecondaryBtn").addEventListener("click", () => {
-      connectStick(secondary);
+      connectStick(secondary, false);
     });
 
-    //------------------------------------------------------------------
-    // Sending commands (to PRIMARY only for now)
-    //------------------------------------------------------------------
-    async function sendToPrimary(line) {
-      if (!primary.txChar) {
-        alert("Primary not connected.");
-        return;
-      }
+    // ------------------------------------------------------------------
+    // Sending commands (BROADCAST to both if connected)
+    // ------------------------------------------------------------------
+    function sendToTarget(target, line) {
+      if (!target.txChar) return;
       const data = new TextEncoder().encode(line + "\n");
-      try {
-        await primary.txChar.writeValue(data);
-      } catch (err) {
-        console.error("Write error:", err);
-      }
+      target.txChar.writeValue(data).catch(err => {
+        console.error("BLE write error:", err);
+      });
+    }
+
+    function sendToBoth(line) {
+      sendToTarget(primary, line);
+      sendToTarget(secondary, line);
     }
 
     // Buttons
     document.getElementById("nextPageBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:NEXT_LIST");
+      sendToBoth("CMD:NEXT_LIST");
     });
     document.getElementById("prevPageBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:PREV_LIST");
+      sendToBoth("CMD:PREV_LIST");
     });
     document.getElementById("nextPatternBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:NEXT_PATTERN");
+      sendToBoth("CMD:NEXT_PATTERN");
     });
     document.getElementById("prevPatternBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:PREV_PATTERN");
+      sendToBoth("CMD:PREV_PATTERN");
     });
     document.getElementById("favoriteBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:FAVORITE");
+      sendToBoth("CMD:FAVORITE");
     });
     document.getElementById("sleepBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:GOTO_SLEEP");
+      sendToBoth("CMD:GOTO_SLEEP");
     });
     document.getElementById("raveBtn").addEventListener("click", () => {
-      sendToPrimary("CMD:RAVE_TIME");
+      sendToBoth("CMD:RAVE_TIME");
     });
 
     // Sliders
     document.getElementById("brightnessSlider").addEventListener("input", (e) => {
       const val = parseInt(e.target.value, 10) || 0;
-      sendToPrimary("SET:BRIGHTNESS:" + val);
+      sendToBoth("SET:BRIGHTNESS:" + val);
     });
 
     document.getElementById("shuffleSlider").addEventListener("input", (e) => {
-      const val = parseInt(e.target.value, 10) || 500;
-      sendToPrimary("SET:SHUFFLE_T:" + val);
+      const val = parseInt(e.target.value, 10) || 100;
+      sendToBoth("SET:SHUFFLE_T:" + val);
     });
 
     // Toggles
     document.getElementById("powerLockBtn").addEventListener("click", () => {
-      sendToPrimary("TOGGLE:POWERLOCK");
+      sendToBoth("TOGGLE:POWERLOCK");
     });
     document.getElementById("sleepTimerBtn").addEventListener("click", () => {
-      sendToPrimary("TOGGLE:SLEEPTIMER");
+      sendToBoth("TOGGLE:SLEEPTIMER");
     });
     document.getElementById("shufflePBtn").addEventListener("click", () => {
-      sendToPrimary("TOGGLE:SHUFFLE_P");
+      sendToBoth("TOGGLE:SHUFFLE_P");
     });
 
-    //------------------------------------------------------------------
-    // List color selector
-    //------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // List selector
+    // ------------------------------------------------------------------
     const listNames = [
       "WHITE", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "INDIGO", "VIOLET", "BLACK"
     ];
-
     const listColorsCSS = [
-      "#ffffff", // white
-      "#ff0000", // red
-      "#ff7f00", // orange
-      "#ffff00", // yellow
-      "#00ff00", // green
-      "#0000ff", // blue
-      "#4b0082", // indigo
-      "#8b00ff", // violet
-      "#000000"  // black
+      "#ffffff", "#ff0000", "#ff7f00", "#ffff00",
+      "#00ff00", "#0000ff", "#4b0082", "#8b00ff", "#000000"
     ];
 
     const listColorBar = document.getElementById("listColorBar");
@@ -368,30 +339,35 @@
       div.className = "list-color";
       div.style.backgroundColor = listColorsCSS[idx];
       div.title = name;
-      div.addEventListener("click", () => {
-        sendToPrimary("SET:LIST:" + idx);
-      });
       div.dataset.listIndex = idx;
+      div.addEventListener("click", () => {
+        // SET:LIST broadcasts; sticks enable shuffle_P and start cycling that list
+        sendToBoth("SET:LIST:" + idx);
+      });
       listColorBar.appendChild(div);
     });
 
     patternSlider.addEventListener("input", (e) => {
       const val1Based = parseInt(e.target.value, 10) || 1;
       const zeroBased = val1Based - 1;
-      sendToPrimary("SET:PATTERN:" + zeroBased);
+      sendToBoth("SET:PATTERN:" + zeroBased);
     });
 
     function highlightList(idx) {
       currentListIndex = idx;
-      listDisplay.textContent = idx != null ? `${listNames[idx]} (${idx+1})` : "-";
+      if (idx != null) {
+        listDisplay.textContent = `${listNames[idx]} (${idx+1})`;
+      } else {
+        listDisplay.textContent = "-";
+      }
       Array.from(listColorBar.children).forEach((el) => {
         el.classList.toggle("active", parseInt(el.dataset.listIndex, 10) === idx);
       });
     }
 
-    //------------------------------------------------------------------
-    // Charts setup (accel, gyro, mic) — primary (blue) + secondary (red)
-    //------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // Charts setup (accel, gyro, mic)
+    // ------------------------------------------------------------------
     const accelCtx = document.getElementById("accelChart").getContext("2d");
     const gyroCtx  = document.getElementById("gyroChart").getContext("2d");
     const micCtx   = document.getElementById("micChart").getContext("2d");
@@ -477,15 +453,13 @@
       micChart.update("none");
     }
 
-    //------------------------------------------------------------------
+    // ------------------------------------------------------------------
     // Incoming data handling
-    //------------------------------------------------------------------
+    // ------------------------------------------------------------------
     let t0 = null;
 
     function handleIncomingData(target, chunk) {
       const isPrimary = (target === primary);
-
-      // BLE UART chunks may not align to lines; split and process each line
       const lines = chunk.split("\n");
       for (const lineRaw of lines) {
         const line = lineRaw.trim();
@@ -497,14 +471,13 @@
     }
 
     function handleSampLine(isPrimary, line) {
-      // Format:
       // SAMP,<millis>,<role>,<listNum>,<patternNum>,ax,ay,az,gx,gy,gz,micLevel
       const parts = line.split(",");
       if (parts.length < 12) return;
 
-      const ms       = parseInt(parts[1], 10) || 0;
-      const listNum  = parseInt(parts[3], 10) || 0;
-      const pattern  = parseInt(parts[4], 10) || 0;
+      const ms      = parseInt(parts[1], 10) || 0;
+      const listNum = parseInt(parts[3], 10) || 0;
+      const pattern = parseInt(parts[4], 10) || 0;
       const ax = parseFloat(parts[5]);
       const ay = parseFloat(parts[6]);
       const az = parseFloat(parts[7]);
@@ -514,7 +487,6 @@
       const mic = parseFloat(parts[11]);
 
       if (isPrimary) {
-        // Update displayed list/pattern (GUI uses 1-based)
         highlightList(listNum);
         patternDisplay.textContent = (pattern + 1).toString();
         patternSlider.value = (pattern + 1);
@@ -532,7 +504,6 @@
 
       updateCharts();
     }
-
   </script>
 </body>
 </html>
