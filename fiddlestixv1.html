@@ -129,6 +129,10 @@
         <button id="sleepBtn">Go To Sleep</button>
         <button id="raveBtn">Rave O’Clock</button>
       </div>
+      <p class="small-label">
+        Rave O’Clock puts the sticks into global shuffle mode: they cycle
+        through <strong>all lists and patterns in order</strong>, not just the current list.
+      </p>
 
       <h3>Current State (Primary)</h3>
       <p>
@@ -164,8 +168,8 @@
 
       <h3>Shuffle Dwell (ms)</h3>
       <div class="slider-row">
-        <span class="small-label">100</span>
-        <input id="shuffleSlider" type="range" min="100" max="10000" step="100" value="5000" />
+        <span class="small-label">2</span>
+        <input id="shuffleSlider" type="range" min="2" max="10000" step="10" value="5000" />
         <span class="small-label">10000</span>
       </div>
 
@@ -291,6 +295,7 @@
       sendToBoth("CMD:GOTO_SLEEP");
     });
     document.getElementById("raveBtn").addEventListener("click", () => {
+      // Rave O’Clock: global shuffle across all lists/patterns
       sendToBoth("CMD:RAVE_TIME");
     });
 
@@ -301,7 +306,7 @@
     });
 
     document.getElementById("shuffleSlider").addEventListener("input", (e) => {
-      const val = parseInt(e.target.value, 10) || 100;
+      const val = parseInt(e.target.value, 10) || 2;
       sendToBoth("SET:SHUFFLE_T:" + val);
     });
 
